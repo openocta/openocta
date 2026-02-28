@@ -1,4 +1,4 @@
- # Octopus
+ # OpenOcta
 
 > 中文说明请见 `README.md`。  
 > For the Chinese version, see `README.md`.
