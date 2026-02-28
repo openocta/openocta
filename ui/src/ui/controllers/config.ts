@@ -110,7 +110,11 @@ export async function saveConfig(state: ConfigState) {
       state.configFormMode === "form" && state.configForm
         ? serializeConfigForm(state.configForm)
         : state.configRaw;
-    const baseHash = state.configSnapshot?.hash;
+    let baseHash = state.configSnapshot?.hash;
+    if (!baseHash) {
+      await loadConfig(state);
+      baseHash = state.configSnapshot?.hash;
+    }
     if (!baseHash) {
       state.lastError = "Config hash missing; reload and retry.";
       return;
@@ -136,7 +140,11 @@ export async function applyConfig(state: ConfigState) {
       state.configFormMode === "form" && state.configForm
         ? serializeConfigForm(state.configForm)
         : state.configRaw;
-    const baseHash = state.configSnapshot?.hash;
+    let baseHash = state.configSnapshot?.hash;
+    if (!baseHash) {
+      await loadConfig(state);
+      baseHash = state.configSnapshot?.hash;
+    }
     if (!baseHash) {
       state.lastError = "Config hash missing; reload and retry.";
       return;

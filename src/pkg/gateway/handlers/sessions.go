@@ -9,10 +9,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/openclaw/openclaw/pkg/agent/tools"
-	"github.com/openclaw/openclaw/pkg/config"
-	"github.com/openclaw/openclaw/pkg/gateway/protocol"
-	"github.com/openclaw/openclaw/pkg/session"
+	"github.com/openocta/openocta/pkg/agent/tools"
+	"github.com/openocta/openocta/pkg/config"
+	"github.com/openocta/openocta/pkg/gateway/protocol"
+	"github.com/openocta/openocta/pkg/session"
 )
 
 // SessionsListParams matches SessionsListParams from TypeScript.
@@ -194,7 +194,7 @@ func SessionsListHandler(opts HandlerOpts) error {
 
 	cfg := loadConfigFromContext(opts.Context)
 	if cfg == nil {
-		cfg = &config.OpenClawConfig{}
+		cfg = &config.OpenOctaConfig{}
 	}
 
 	env := func(k string) string { return os.Getenv(k) }
@@ -242,7 +242,7 @@ func SessionsPreviewHandler(opts HandlerOpts) error {
 
 	cfg := loadConfigFromContext(opts.Context)
 	if cfg == nil {
-		cfg = &config.OpenClawConfig{}
+		cfg = &config.OpenOctaConfig{}
 	}
 
 	env := func(k string) string { return os.Getenv(k) }
@@ -719,7 +719,7 @@ type sessionStoreTarget struct {
 }
 
 // loadConfigFromContext loads config from context or returns nil.
-func loadConfigFromContext(ctx *Context) *config.OpenClawConfig {
+func loadConfigFromContext(ctx *Context) *config.OpenOctaConfig {
 	if ctx == nil {
 		return nil
 	}
@@ -735,8 +735,8 @@ func loadConfigFromContext(ctx *Context) *config.OpenClawConfig {
 	return nil
 }
 
-// resolveMainSessionKey resolves the main session key from config.
-func resolveMainSessionKey(cfg *config.OpenClawConfig) string {
+// ResolveMainSessionKey returns the main session key from config (exported for hooks).
+func ResolveMainSessionKey(cfg *config.OpenOctaConfig) string {
 	if cfg == nil || cfg.Session == nil || cfg.Session.MainKey == nil {
 		return "main"
 	}
@@ -747,8 +747,13 @@ func resolveMainSessionKey(cfg *config.OpenClawConfig) string {
 	return strings.ToLower(key)
 }
 
+// resolveMainSessionKey resolves the main session key from config.
+func resolveMainSessionKey(cfg *config.OpenOctaConfig) string {
+	return ResolveMainSessionKey(cfg)
+}
+
 // resolveSessionStoreKey resolves the canonical session store key.
-func resolveSessionStoreKey(cfg *config.OpenClawConfig, sessionKey string) string {
+func resolveSessionStoreKey(cfg *config.OpenOctaConfig, sessionKey string) string {
 	raw := strings.TrimSpace(sessionKey)
 	if raw == "" {
 		return raw
@@ -773,7 +778,7 @@ func resolveSessionStoreKey(cfg *config.OpenClawConfig, sessionKey string) strin
 }
 
 // resolveSessionStoreAgentID resolves agent ID from canonical key.
-func resolveSessionStoreAgentID(cfg *config.OpenClawConfig, canonicalKey string) string {
+func resolveSessionStoreAgentID(cfg *config.OpenOctaConfig, canonicalKey string) string {
 	if canonicalKey == "global" || canonicalKey == "unknown" {
 		return "main"
 	}
@@ -785,7 +790,7 @@ func resolveSessionStoreAgentID(cfg *config.OpenClawConfig, canonicalKey string)
 }
 
 // resolveGatewaySessionStoreTarget resolves session store target for gateway operations.
-func resolveGatewaySessionStoreTarget(cfg *config.OpenClawConfig, key string, env func(string) string) sessionStoreTarget {
+func resolveGatewaySessionStoreTarget(cfg *config.OpenOctaConfig, key string, env func(string) string) sessionStoreTarget {
 	canonicalKey := resolveSessionStoreKey(cfg, key)
 	agentID := resolveSessionStoreAgentID(cfg, canonicalKey)
 
@@ -882,7 +887,7 @@ func resolveSessionPreview(key, storePath string, store session.SessionStore, li
 }
 
 // resolveSessionModelRef resolves model reference for a session entry.
-func resolveSessionModelRef(cfg *config.OpenClawConfig, entry session.SessionEntry, agentID string) struct {
+func resolveSessionModelRef(cfg *config.OpenOctaConfig, entry session.SessionEntry, agentID string) struct {
 	provider string
 	model    string
 } {
@@ -1215,7 +1220,7 @@ func normalizeAgentID(id string) string {
 	return s
 }
 
-func resolveDefaultAgentID(cfg *config.OpenClawConfig) string {
+func resolveDefaultAgentID(cfg *config.OpenOctaConfig) string {
 	if cfg == nil || cfg.Agents == nil || len(cfg.Agents.List) == 0 {
 		return "main"
 	}
@@ -1232,7 +1237,7 @@ func resolveDefaultAgentID(cfg *config.OpenClawConfig) string {
 	return "main"
 }
 
-func listConfiguredAgentIDs(cfg *config.OpenClawConfig) []string {
+func listConfiguredAgentIDs(cfg *config.OpenOctaConfig) []string {
 	ids := make(map[string]bool)
 	if cfg != nil && cfg.Agents != nil && len(cfg.Agents.List) > 0 {
 		for _, agent := range cfg.Agents.List {
@@ -1294,7 +1299,7 @@ func mergeSessionEntryIntoCombined(combined session.SessionStore, entry session.
 	combined[canonicalKey] = entry
 }
 
-func loadCombinedSessionStoreForGateway(cfg *config.OpenClawConfig, env func(string) string) (string, session.SessionStore) {
+func loadCombinedSessionStoreForGateway(cfg *config.OpenOctaConfig, env func(string) string) (string, session.SessionStore) {
 	var storeConfig *string
 	if cfg.Session != nil && cfg.Session.Store != nil && !isStorePathTemplate(cfg.Session.Store) {
 		// Single store path (not a template)
@@ -1403,7 +1408,7 @@ func normalizeSessionDeliveryFields(entry session.SessionEntry) (deliveryContext
 	return nil, nil, nil, nil
 }
 
-func listSessionsFromStore(cfg *config.OpenClawConfig, storePath string, store session.SessionStore, params *SessionsListParams) *SessionsListResult {
+func listSessionsFromStore(cfg *config.OpenOctaConfig, storePath string, store session.SessionStore, params *SessionsListParams) *SessionsListResult {
 	now := time.Now().UnixMilli()
 
 	includeGlobal := params.IncludeGlobal != nil && *params.IncludeGlobal
@@ -1707,7 +1712,7 @@ func listSessionsFromStore(cfg *config.OpenClawConfig, storePath string, store s
 	}
 }
 
-func resolveSessionPreviewForGateway(cfg *config.OpenClawConfig, key string, storeCache map[string]session.SessionStore, limit, maxChars int, env func(string) string) (SessionsPreview, error) {
+func resolveSessionPreviewForGateway(cfg *config.OpenOctaConfig, key string, storeCache map[string]session.SessionStore, limit, maxChars int, env func(string) string) (SessionsPreview, error) {
 	target := resolveGatewaySessionStoreTarget(cfg, key, env)
 	store, ok := storeCache[target.storePath]
 	if !ok {
@@ -1758,7 +1763,7 @@ func resolveSessionPreviewForGateway(cfg *config.OpenClawConfig, key string, sto
 	return SessionsPreview{Key: key, Status: status, Items: previewItems}, nil
 }
 
-func applySessionsPatchToStore(cfg *config.OpenClawConfig, store session.SessionStore, storeKey string, params *SessionsPatchParams) (session.SessionEntry, error) {
+func applySessionsPatchToStore(cfg *config.OpenOctaConfig, store session.SessionStore, storeKey string, params *SessionsPatchParams) (session.SessionEntry, error) {
 	entry := store[storeKey]
 	now := time.Now().UnixMilli()
 	if entry.SessionID == "" {
@@ -1825,7 +1830,7 @@ func resolveSessionTranscriptPath(sessionID, storePath, sessionFile, agentID str
 	return session.ResolveSessionFilePath(sessionID, &session.SessionPathOptions{AgentID: agentID}, env)
 }
 
-func getSessionDefaults(cfg *config.OpenClawConfig) GatewaySessionsDefaults {
+func getSessionDefaults(cfg *config.OpenOctaConfig) GatewaySessionsDefaults {
 	defaults := GatewaySessionsDefaults{
 		ModelProvider: "anthropic",
 		Model:         "claude-sonnet-4-5-20250929",

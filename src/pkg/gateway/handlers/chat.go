@@ -14,13 +14,14 @@ import (
 
 	"github.com/cexll/agentsdk-go/pkg/api"
 	"github.com/google/uuid"
-	"github.com/openclaw/openclaw/pkg/agent"
-	"github.com/openclaw/openclaw/pkg/agent/runtime"
-	"github.com/openclaw/openclaw/pkg/agent/tools"
-	"github.com/openclaw/openclaw/pkg/config"
-	"github.com/openclaw/openclaw/pkg/gateway/protocol"
-	"github.com/openclaw/openclaw/pkg/logging"
-	"github.com/openclaw/openclaw/pkg/session"
+	"github.com/openocta/openocta/pkg/agent"
+	"github.com/openocta/openocta/pkg/agent/runtime"
+	"github.com/openocta/openocta/pkg/agent/tools"
+	"github.com/openocta/openocta/pkg/channels"
+	"github.com/openocta/openocta/pkg/config"
+	"github.com/openocta/openocta/pkg/gateway/protocol"
+	"github.com/openocta/openocta/pkg/logging"
+	"github.com/openocta/openocta/pkg/session"
 )
 
 var chatLog = logging.Sub("chat")
@@ -57,8 +58,19 @@ func nextChatSeq(agentRunSeq map[string]int64, runId string) int64 {
 	return seq
 }
 
+// DeliverContext 用于将 assistant 消息投递到 IM 通道（如飞书）。
+type DeliverContext struct {
+	Channel   string                 // 通道 ID，如 "feishu"、"qq"
+	To        string                 // 接收者 ID（chatId/openId/groupId 等）
+	ChatType  string                 // "dm"|"group"|"channel"，供 QQ 等区分发送 API
+	UserQuery string                 // 用户原始提问，用于格式化 "| 回复 Agent: userQuery"
+	AgentName string                 // 助手名称，如 "Desmond"
+	Metadata  map[string]interface{} // 通道特定元数据（如 session_webhook）
+}
+
 // broadcastChatFinal broadcasts a final chat message to clients.
-func broadcastChatFinal(ctx *Context, runId string, sessionKey string, message map[string]interface{}) {
+// 若 deliver 非 nil，同时将消息投递到对应 IM 通道，格式为 "| 回复 {agentName}: {userQuery}\n\n{content}"。
+func broadcastChatFinal(ctx *Context, runId string, sessionKey string, message map[string]interface{}, deliver *DeliverContext) {
 	if ctx == nil || ctx.Broadcast == nil {
 		return
 	}
@@ -77,6 +89,95 @@ func broadcastChatFinal(ctx *Context, runId string, sessionKey string, message m
 	if ctx.NodeSendToSession != nil {
 		ctx.NodeSendToSession(sessionKey, "chat", payload)
 	}
+
+	// 投递到 IM 通道（飞书、QQ、企微、钉钉等）
+	if deliver != nil && deliver.Channel != "" && deliver.To != "" && ctx.ChannelManager != nil {
+		content := extractAssistantTextFromMessage(message)
+		if content != "" {
+			formatted := formatChannelReply(deliver.AgentName, deliver.UserQuery, content)
+			rt, ok := ctx.ChannelManager.Get(strings.ToLower(deliver.Channel))
+			if ok && rt != nil {
+				outMsg := &channels.RuntimeOutboundMessage{
+					Channel: deliver.Channel,
+					ChatID:  deliver.To,
+					Content: formatted,
+				}
+				if deliver.ChatType != "" {
+					if outMsg.Metadata == nil {
+						outMsg.Metadata = make(map[string]interface{})
+					}
+					outMsg.Metadata["chat_type"] = deliver.ChatType
+				}
+				if len(deliver.Metadata) > 0 {
+					if outMsg.Metadata == nil {
+						outMsg.Metadata = make(map[string]interface{})
+					}
+					for k, v := range deliver.Metadata {
+						outMsg.Metadata[k] = v
+					}
+				}
+				_ = rt.Send(outMsg)
+			}
+		}
+	}
+}
+
+// extractAssistantTextFromMessage 从 message body 中提取 assistant 文本内容。
+func extractAssistantTextFromMessage(message map[string]interface{}) string {
+	if message == nil {
+		return ""
+	}
+	content, ok := message["content"].([]map[string]interface{})
+	if !ok {
+		if c, ok := message["content"].([]interface{}); ok {
+			var parts []string
+			for _, item := range c {
+				if m, ok := item.(map[string]interface{}); ok {
+					if t, ok := m["text"].(string); ok {
+						parts = append(parts, t)
+					}
+				}
+			}
+			return strings.Join(parts, "")
+		}
+		return ""
+	}
+	var parts []string
+	for _, block := range content {
+		if t, ok := block["text"].(string); ok {
+			parts = append(parts, t)
+		}
+	}
+	return strings.Join(parts, "")
+}
+
+// resolveAgentDisplayName 从配置解析助手显示名称，默认 "助手"。
+func resolveAgentDisplayName(ctx *Context, agentID string) string {
+	if ctx == nil || ctx.Config == nil || ctx.Config.Agents == nil || len(ctx.Config.Agents.List) == 0 {
+		return "助手"
+	}
+	agentID = strings.TrimSpace(strings.ToLower(agentID))
+	for i := range ctx.Config.Agents.List {
+		a := &ctx.Config.Agents.List[i]
+		id := strings.TrimSpace(strings.ToLower(a.ID))
+		if id == agentID && a.Identity != nil && strings.TrimSpace(a.Identity.Name) != "" {
+			return strings.TrimSpace(a.Identity.Name)
+		}
+	}
+	return "助手"
+}
+
+// formatChannelReply 格式化为 "| 回复 {agentName}: {userQuery}\n\n{content}"。
+func formatChannelReply(agentName, userQuery, content string) string {
+	agentName = strings.TrimSpace(agentName)
+	if agentName == "" {
+		agentName = "助手"
+	}
+	userQuery = strings.TrimSpace(userQuery)
+	if userQuery == "" {
+		return content
+	}
+	return fmt.Sprintf("| 回复 %s: %s\n\n%s", agentName, userQuery, content)
 }
 
 // broadcastChatError broadcasts a chat error to clients.
@@ -127,7 +228,7 @@ func broadcastAgentEvent(ctx *Context, runId string, sessionKey string, stream s
 
 // buildSkillsSnapshotForSession loads skills for the workspace and returns a snapshot for session store.
 // Returns nil on error or when no skills. Snapshot shape matches SessionEntry.skillsSnapshot (prompt, skills, resolvedSkills, version).
-func buildSkillsSnapshotForSession(projectRoot string, cfg *config.OpenClawConfig) interface{} {
+func buildSkillsSnapshotForSession(projectRoot string, cfg *config.OpenOctaConfig) interface{} {
 	entries, err := runtime.LoadSkillsForWorkspace(projectRoot, cfg)
 	if err != nil || len(entries) == 0 {
 		return nil
@@ -555,8 +656,26 @@ func ChatSendHandler(opts HandlerOpts) error {
 		}
 		chatAbortControllers.Store(runId, ctrl)
 
+		// 提取投递上下文（用于飞书、QQ、企微、钉钉等通道）
+		deliverChannel, _ := opts.Params["channel"].(string)
+		deliverTo, _ := opts.Params["to"].(string)
+		deliverChatType, _ := opts.Params["chatType"].(string)
+		deliverOriginalMessage := message
+		deliverAgentName := resolveAgentDisplayName(opts.Context, agent.ResolveSessionAgentID(sessionKey))
+		var deliverCtx *DeliverContext
+		if deliverChannel != "" && deliverTo != "" {
+			deliverCtx = &DeliverContext{
+				Channel:   strings.TrimSpace(deliverChannel),
+				To:        strings.TrimSpace(deliverTo),
+				ChatType:  strings.TrimSpace(deliverChatType),
+				UserQuery: deliverOriginalMessage,
+				AgentName: deliverAgentName,
+			}
+		}
+
 		go func() {
 			ctxForBroadcast := opts.Context // Capture context for broadcast
+			deliverForGoroutine := deliverCtx
 			defer func() {
 				chatAbortControllers.Delete(runId)
 				cancel()
@@ -603,7 +722,7 @@ func ChatSendHandler(opts HandlerOpts) error {
 			}
 			// Resolve workspace root and config first so we can decide MCP source (config vs context)
 			projectRoot := ""
-			var runtimeConfig *config.OpenClawConfig
+			var runtimeConfig *config.OpenOctaConfig
 			agentID := "main"
 			if ctxForBroadcast != nil && ctxForBroadcast.Config != nil {
 				runtimeConfig = ctxForBroadcast.Config
@@ -711,7 +830,7 @@ func ChatSendHandler(opts HandlerOpts) error {
 						"content":   []map[string]interface{}{{"type": "text", "text": output}},
 						"timestamp": time.Now().UnixMilli(),
 					}
-					broadcastChatFinal(ctxForBroadcast, runId, sessionKey, messageBody)
+					broadcastChatFinal(ctxForBroadcast, runId, sessionKey, messageBody, deliverForGoroutine)
 				} else {
 					appendErrorToTranscript(transcriptPath, "模型未返回任何输出", runId, sessionKey, ctxForBroadcast)
 				}
@@ -865,14 +984,14 @@ func ChatSendHandler(opts HandlerOpts) error {
 							"content":   contentSnapshot,
 							"timestamp": tsMs,
 						}
-						broadcastChatFinal(ctxForBroadcast, runId, sessionKey, messageBody)
+						broadcastChatFinal(ctxForBroadcast, runId, sessionKey, messageBody, deliverForGoroutine)
 						// Reset accumulators so next EventMessageStop (if any) does not include this turn's content
 						assistantContent = nil
 						textBuf.Reset()
 					} else if usageSnapshot != nil {
 						broadcastChatFinal(ctxForBroadcast, runId, sessionKey, map[string]interface{}{
 							"role": "assistant", "content": []map[string]interface{}{}, "timestamp": time.Now().UnixMilli(),
-						})
+						}, deliverForGoroutine)
 					}
 				case api.EventError:
 					outMsg := ""
@@ -921,7 +1040,7 @@ func ChatSendHandler(opts HandlerOpts) error {
 						"content":   []map[string]interface{}{{"type": "text", "text": output}},
 						"timestamp": time.Now().UnixMilli(),
 					}
-					broadcastChatFinal(ctxForBroadcast, runId, sessionKey, messageBody)
+					broadcastChatFinal(ctxForBroadcast, runId, sessionKey, messageBody, deliverForGoroutine)
 				}
 			}
 
@@ -1272,7 +1391,7 @@ func ChatInjectHandler(opts HandlerOpts) error {
 	// Broadcast to webchat clients for immediate UI update
 	runId := fmt.Sprintf("inject-%s", messageID)
 	if opts.Context != nil {
-		broadcastChatFinal(opts.Context, runId, sessionKey, messageBody)
+		broadcastChatFinal(opts.Context, runId, sessionKey, messageBody, nil)
 	}
 
 	opts.Respond(true, map[string]interface{}{

@@ -221,7 +221,7 @@ When a user says something vague like "something is wrong" or "help me debug", f
 6. **Correlate and diagnose** — connect all the data into a coherent explanation
 7. **Recommend specific actions** — with exact commands the user can approve
 
-### Discord v2 Delivery Mode (OpenClaw v2026.2.14+)
+### Discord v2 Delivery Mode (OpenOcta v2026.2.14+)
 
 When the conversation is happening in a Discord channel:
 

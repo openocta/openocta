@@ -1,4 +1,4 @@
-// Package runtime wraps agentsdk-go api.New for OpenClaw agent execution.
+// Package runtime wraps agentsdk-go api.New for OPENOCTA agent execution.
 package runtime
 
 import (
@@ -12,19 +12,19 @@ import (
 	"github.com/cexll/agentsdk-go/pkg/model"
 	"github.com/cexll/agentsdk-go/pkg/sandbox"
 	"github.com/cexll/agentsdk-go/pkg/tool"
-	"github.com/openclaw/openclaw/pkg/agent"
-	"github.com/openclaw/openclaw/pkg/config"
+	"github.com/openocta/openocta/pkg/agent"
+	"github.com/openocta/openocta/pkg/config"
 )
 
-// Runtime wraps agentsdk-go Runtime for OpenClaw.
+// Runtime wraps agentsdk-go Runtime for OPENOCTA.
 type Runtime struct {
 	rt *api.Runtime
 }
 
 // New creates a new Runtime with the given options.
 // When EnableSkills is true, skills are loaded from three locations (in order of precedence):
-// 1. Built-in skills (shipped with install: OPENCLAW_BUNDLED_SKILLS_DIR or executable-relative)
-// 2. Managed/local skills (~/.openclaw/skills)
+// 1. Built-in skills (shipped with install: OPENOCTA_BUNDLED_SKILLS_DIR or executable-relative)
+// 2. Managed/local skills (~/.openocta/skills)
 // 3. Workspace skills (<workspace>/skills, i.e. ProjectRoot/skills)
 func New(ctx context.Context, opts Options) (*Runtime, error) {
 	if opts.ModelFactory == nil {
@@ -111,8 +111,8 @@ type Options struct {
 	// ProjectRoot is the workspace/project root (used as api.Options.ProjectRoot and for loading workspace skills).
 	ProjectRoot string
 	// Config is optional; when set, used for skill load config (e.g. extraDirs) and eligibility.
-	Config *config.OpenClawConfig
-	// EnableSkills loads skills from built-in, ~/.openclaw/skills, and <workspace>/skills and registers them with the runtime.
+	Config *config.OpenOctaConfig
+	// EnableSkills loads skills from built-in, ~/.openocta/skills, and <workspace>/skills and registers them with the runtime.
 	EnableSkills bool
 	// EnableCommands enables slash-command execution when Commands is non-empty.
 	EnableCommands bool
@@ -130,13 +130,13 @@ type Options struct {
 	MCPServers []string
 	// TokenTracking enables token usage recording; default true when creating runtime for chat.
 	TokenTracking bool
-	// TokenCallback is called after each token usage; when nil and TokenTracking true, logs to ~/.openclaw/agents/<agentID>/sessions/<sessionID>.jsonl.
+	// TokenCallback is called after each token usage; when nil and TokenTracking true, logs to ~/.openocta/agents/<agentID>/sessions/<sessionID>.jsonl.
 	TokenCallback api.TokenCallback
 	// AgentID is used to resolve session transcript path for default TokenCallback (e.g. "main").
 	AgentID string
 	// Env is used to resolve state dir for default TokenCallback (e.g. os.Getenv).
 	Env func(string) string
-	// EnableSystemPrompt builds system prompt from ~/.openclaw/workspace and ProjectRoot/prompt (deduped by filename) and sets api.Options.SystemPrompt.
+	// EnableSystemPrompt builds system prompt from ~/.openocta/workspace and ProjectRoot/prompt (deduped by filename) and sets api.Options.SystemPrompt.
 	EnableSystemPrompt bool
 	// SystemPromptOverrides if non-empty replaces the auto-built system prompt when EnableSystemPrompt is true.
 	SystemPromptOverrides string

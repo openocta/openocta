@@ -2,6 +2,7 @@ package cron
 
 import (
 	"encoding/json"
+	"github.com/openocta/openocta/pkg/logging"
 	"os"
 	"path/filepath"
 )
@@ -16,9 +17,13 @@ func LoadStore(storePath string) (*StoreFile, error) {
 		return nil, err
 	}
 	var store StoreFile
-	if err := json.Unmarshal(data, &store); err != nil {
+	if data == nil || len(data) == 0 {
+		store.Jobs = []CronJob{}
+	} else if err := json.Unmarshal(data, &store); err != nil {
+		logging.Error("Failed to unmarshal cron store: %v", err)
 		return nil, err
 	}
+
 	if store.Jobs == nil {
 		store.Jobs = []CronJob{}
 	}

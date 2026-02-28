@@ -3,17 +3,17 @@ package protocol
 // Gateway client IDs (from client-info.ts).
 const (
 	ClientIDWebchatUI   = "webchat-ui"
-	ClientIDControlUI   = "openclaw-control-ui"
+	ClientIDControlUI   = "openocta-control-ui"
 	ClientIDWebchat     = "webchat"
 	ClientIDCLI         = "cli"
 	ClientIDGateway     = "gateway-client"
-	ClientIDMacOSApp    = "openclaw-macos"
-	ClientIDIOSApp      = "openclaw-ios"
-	ClientIDAndroidApp  = "openclaw-android"
+	ClientIDMacOSApp    = "openocta-macos"
+	ClientIDIOSApp      = "openocta-ios"
+	ClientIDAndroidApp  = "openocta-android"
 	ClientIDNodeHost    = "node-host"
 	ClientIDTest        = "test"
 	ClientIDFingerprint = "fingerprint"
-	ClientIDProbe       = "openclaw-probe"
+	ClientIDProbe       = "openocta-probe"
 )
 
 // Gateway client modes.

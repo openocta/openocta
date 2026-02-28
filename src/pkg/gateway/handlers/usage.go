@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openclaw/openclaw/pkg/config"
-	"github.com/openclaw/openclaw/pkg/session"
+	"github.com/openocta/openocta/pkg/config"
+	"github.com/openocta/openocta/pkg/session"
 )
 
 // UsageStatusResult matches TS usage.status response (UsageSummary: updatedAt + providers array).
@@ -178,7 +178,7 @@ func usageCostTotalsFromSession(t session.CostUsageTotals) UsageCostTotals {
 func UsageCostHandler(opts HandlerOpts) error {
 	cfg := loadConfigFromContext(opts.Context)
 	if cfg == nil {
-		cfg = &config.OpenClawConfig{}
+		cfg = &config.OpenOctaConfig{}
 	}
 	startMs, endMs := parseUsageCostDateRange(opts.Params)
 	env := func(k string) string { return os.Getenv(k) }

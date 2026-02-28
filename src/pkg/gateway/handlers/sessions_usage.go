@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openclaw/openclaw/pkg/agent/tools"
-	"github.com/openclaw/openclaw/pkg/config"
-	"github.com/openclaw/openclaw/pkg/gateway/protocol"
-	"github.com/openclaw/openclaw/pkg/session"
+	"github.com/openocta/openocta/pkg/agent/tools"
+	"github.com/openocta/openocta/pkg/config"
+	"github.com/openocta/openocta/pkg/gateway/protocol"
+	"github.com/openocta/openocta/pkg/session"
 )
 
 // SessionsUsageResult matches TS SessionsUsageResult.
@@ -217,7 +217,7 @@ func SessionsUsageHandler(opts HandlerOpts) error {
 		// Resolve single session by key using gateway store target (aligns with TS resolveSessionFilePath(sessionId, storeEntry)).
 		cfg := loadConfigFromContext(opts.Context)
 		if cfg == nil {
-			cfg = &config.OpenClawConfig{}
+			cfg = &config.OpenOctaConfig{}
 		}
 		target := resolveGatewaySessionStoreTarget(cfg, specificKey, env)
 		entry, found := loadSessionEntryFromStore(target.storePath, specificKey, target.storeKeys)
@@ -255,7 +255,7 @@ func SessionsUsageHandler(opts HandlerOpts) error {
 		// Discover all sessions for each configured agent; merge with store for labels (aligns with TS discoverAllSessions + store merge).
 		cfg := loadConfigFromContext(opts.Context)
 		if cfg == nil {
-			cfg = &config.OpenClawConfig{}
+			cfg = &config.OpenOctaConfig{}
 		}
 		storePath, store := loadCombinedSessionStoreForGateway(cfg, env)
 		storeBySessionID := make(map[string]struct {
@@ -330,7 +330,7 @@ func SessionsUsageHandler(opts HandlerOpts) error {
 	// Load usage for each session and aggregate (aligns with TS loadSessionCostSummary + aggregates).
 	cfgForRef := loadConfigFromContext(opts.Context)
 	if cfgForRef == nil {
-		cfgForRef = &config.OpenClawConfig{}
+		cfgForRef = &config.OpenOctaConfig{}
 	}
 	var sessions []SessionUsageEntry
 	var totals session.CostUsageTotals
@@ -759,7 +759,7 @@ func SessionsUsageHandler(opts HandlerOpts) error {
 func resolveSessionFileByKey(opts HandlerOpts, key string) (sessionID, sessionFile, agentID string) {
 	cfg := loadConfigFromContext(opts.Context)
 	if cfg == nil {
-		cfg = &config.OpenClawConfig{}
+		cfg = &config.OpenOctaConfig{}
 	}
 	env := func(k string) string { return os.Getenv(k) }
 	target := resolveGatewaySessionStoreTarget(cfg, key, env)

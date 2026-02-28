@@ -3,7 +3,7 @@
 package handlers
 
 import (
-	"github.com/openclaw/openclaw/pkg/gateway/protocol"
+	"github.com/openocta/openocta/pkg/gateway/protocol"
 )
 
 // SetHeartbeatsHandler handles "set-heartbeats" (stub: no-op).
@@ -19,24 +19,6 @@ func SetHeartbeatsHandler(opts HandlerOpts) error {
 // SystemEventHandler handles "system-event" (stub: no-op).
 func SystemEventHandler(opts HandlerOpts) error {
 	opts.Respond(true, map[string]interface{}{"ok": true}, nil, nil)
-	return nil
-}
-
-// ConfigSetHandler handles "config.set" (stub).
-func ConfigSetHandler(opts HandlerOpts) error {
-	opts.Respond(false, nil, &protocol.ErrorShape{
-		Code:    "method_not_implemented",
-		Message: "config.set not implemented",
-	}, nil)
-	return nil
-}
-
-// ConfigPatchHandler handles "config.patch" (stub).
-func ConfigPatchHandler(opts HandlerOpts) error {
-	opts.Respond(false, nil, &protocol.ErrorShape{
-		Code:    "method_not_implemented",
-		Message: "config.patch not implemented",
-	}, nil)
 	return nil
 }
 
@@ -61,12 +43,6 @@ func WebLoginStubHandler(opts HandlerOpts) error {
 		Code:    "method_not_implemented",
 		Message: "web.login not implemented",
 	}, nil)
-	return nil
-}
-
-// ChannelsLogoutHandler handles "channels.logout" (stub).
-func ChannelsLogoutHandler(opts HandlerOpts) error {
-	opts.Respond(true, map[string]interface{}{"ok": true}, nil, nil)
 	return nil
 }
 

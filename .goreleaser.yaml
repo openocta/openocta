@@ -1,58 +1,75 @@
-# GoReleaser 配置：交叉编译、RPM/DEB、安装包
-# 版本号以 tag 为准，tag 规范：vx.y.z
+# GoReleaser 配置：单一二进制（前端+配置已嵌入）、RPM/DEB、ZIP(Windows)、Docker
+# 构建顺序：1) 前端 2) 复制 embed 资源 3) 后端 4) 打包
 # 使用：GITLAB_TOKEN=xxx goreleaser release --clean
+# 或本地：goreleaser release --snapshot --clean --skip=publish
 
 version: 2
-project_name: openclaw
+project_name: openocta
 
 before:
   hooks:
+    - cd ui && npm install && npm run build
+    - cp src/config-schema.json src/openocta.json.example src/.env src/embed/
     - cd src && go mod download
 
 builds:
-  - id: openclaw
+  - id: openocta
     dir: src
-    main: ./cmd/openclaw
-    binary: openclaw
+    main: ./cmd/openocta
+    binary: openocta
     goos:
       - linux
       - darwin
+      - windows
     goarch:
       - amd64
       - arm64
     ldflags:
       - -s -w
-      - -X github.com/openclaw/openclaw/pkg/version.Version={{.Version}}
+      - -X github.com/openocta/openocta/pkg/version.Version={{.Version}}
 
 archives:
   - id: default
+    wrap_in_directory: true
     format_overrides:
       - goos: windows
         format: zip
     builds:
-      - openclaw
+      - openocta
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     format: tar.gz
+    files:
+      - none*
 
 nfpms:
-  - id: openclaw
-    package_name: openclaw
-    vendor: OpenClaw
+  - id: openocta
+    package_name: openocta
+    vendor: OpenOcta
+    maintainer: OpenOcta <noreply@openocta.dev>
     homepage: https://docs.openclaw.ai
-    description: OpenClaw Gateway - Personal AI Assistant control plane
+    description: OpenOcta Gateway - Personal AI Assistant control plane
     formats:
       - rpm
       - deb
     contents:
-      - src: deploy/openclaw.service
-        dst: /lib/systemd/system/openclaw.service
-    # 安装后执行 systemctl daemon-reload
+      - src: deploy/openocta.service
+        dst: /lib/systemd/system/openocta.service
     scripts:
       postinstall: deploy/scripts/postinstall.sh
       postremove: deploy/scripts/postremove.sh
+
+dockers:
+  - id: openocta
+    goos: linux
+    goarch: amd64
+    ids:
+      - openocta
+    image_templates:
+      - "openocta/openocta:{{ .Tag }}"
+      - "openocta/openocta:latest"
+    dockerfile: deploy/Dockerfile.goreleaser
 
 release:
   gitlab:
     owner: "{{ .Env.CI_PROJECT_NAMESPACE }}"
     name: "{{ .Env.CI_PROJECT_NAME }}"
-  # 若本地/非 GitLab 发布，可改为固定值或使用 GORELEASER_GITLAB_* 环境变量

@@ -1,6 +1,6 @@
 # Webhooks 说明
 
-本文档基于 Gateway 中 `hooks.go` 的实际实现，以及官方文档 [`https://docs.openclaw.ai/zh-CN/automation/webhook`](https://docs.openclaw.ai/zh-CN/automation/webhook) 的约定，说明 OpenClaw Gateway 对外提供的 Webhook 接口：
+本文档基于 Gateway 中 `hooks.go` 的实际实现，以及官方文档 [`https://docs.openocta.ai/zh-CN/automation/webhook`](https://docs.openocta.ai/zh-CN/automation/webhook) 的约定，说明 OpenOcta Gateway 对外提供的 Webhook 接口：
 
 - `/hooks/wake`
 - `/hooks/agent`
@@ -47,7 +47,7 @@
 当配置了 `hooks.token` 时，所有 Webhook 请求必须携带正确的 Token，否则返回 `401`：
 
 - **推荐**：`Authorization: Bearer <token>`
-- 或：`X-OpenClaw-Token: <token>`
+- 或：`X-OpenOcta-Token: <token>`
 
 当前实现中 **不读取 URL 查询参数中的 `?token=...`**，与官网文档中“已弃用的 `?token` 方式”保持安全一致，但实现层面已不再支持。
 
@@ -343,7 +343,7 @@
 
 ## 安全建议
 
-综合 [`https://docs.openclaw.ai/zh-CN/automation/webhook`](https://docs.openclaw.ai/zh-CN/automation/webhook) 的官方建议与本仓库实现：
+综合 [`https://docs.openocta.ai/zh-CN/automation/webhook`](https://docs.openocta.ai/zh-CN/automation/webhook) 的官方建议与本仓库实现：
 
 - **部署范围**：尽量将 Webhook 端点暴露在 loopback、VPN/tailnet 或受信任的反向代理之后，避免直接暴露在公网。  
 - **独立 Token**：为 Webhook 使用单独的 `hooks.token`，不要与 Gateway 其他认证 token 复用。  

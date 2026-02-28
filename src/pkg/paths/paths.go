@@ -4,27 +4,48 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
 const (
-	newStateDirname      = ".openclaw"
-	configFilename       = "openclaw.json"
+	newStateDirname      = ".openocta"
+	newStateDirnameWin   = "openocta"
+	configFilename       = "openocta.json"
 	defaultGatewayPort   = 18789
 	legacyStateDirname   = ".clawdbot"
 	legacyConfigClawdbot = "clawdbot.json"
 )
 
 // ResolveStateDir returns the state directory for mutable data (sessions, logs, caches).
-// Override via OPENCLAW_STATE_DIR or CLAWDBOT_STATE_DIR.
-// Default: ~/.openclaw
+// Override via OPENOCTA_STATE_DIR or CLAWDBOT_STATE_DIR.
+// Default: ~/.openocta on Linux/macOS, %APPDATA%\openocta on Windows.
 func ResolveStateDir(env func(string) string) string {
-	override := strings.TrimSpace(env("OPENCLAW_STATE_DIR"))
+	override := strings.TrimSpace(env("OPENOCTA_STATE_DIR"))
 	if override == "" {
 		override = strings.TrimSpace(env("CLAWDBOT_STATE_DIR"))
 	}
 	if override != "" {
 		return expandUserPath(override, env)
+	}
+	if runtime.GOOS == "windows" {
+		appData := strings.TrimSpace(env("APPDATA"))
+		if appData == "" {
+			appData = strings.TrimSpace(env("LOCALAPPDATA"))
+		}
+		if appData == "" {
+			home := resolveHomeDir(env)
+			appData = filepath.Join(home, "AppData", "Roaming")
+		}
+		newDir := filepath.Join(appData, newStateDirnameWin)
+		legacyDir := filepath.Join(appData, legacyStateDirname)
+		if pathExists(newDir) {
+			return newDir
+		}
+		if pathExists(legacyDir) {
+			return legacyDir
+		}
+		return newDir
 	}
 	home := resolveHomeDir(env)
 	newDir := filepath.Join(home, newStateDirname)
@@ -39,10 +60,10 @@ func ResolveStateDir(env func(string) string) string {
 }
 
 // ResolveConfigPath returns the active config file path.
-// Override via OPENCLAW_CONFIG_PATH or CLAWDBOT_CONFIG_PATH.
-// Default: $STATE_DIR/openclaw.json
+// Override via OPENOCTA_CONFIG_PATH or CLAWDBOT_CONFIG_PATH.
+// Default: $STATE_DIR/openocta.json
 func ResolveConfigPath(env func(string) string, stateDir string) string {
-	override := strings.TrimSpace(env("OPENCLAW_CONFIG_PATH"))
+	override := strings.TrimSpace(env("OPENOCTA_CONFIG_PATH"))
 	if override == "" {
 		override = strings.TrimSpace(env("CLAWDBOT_CONFIG_PATH"))
 	}
@@ -63,7 +84,7 @@ func ResolveConfigPath(env func(string) string, stateDir string) string {
 
 // ResolveCanonicalConfigPath returns the canonical config path regardless of existence.
 func ResolveCanonicalConfigPath(env func(string) string, stateDir string) string {
-	override := strings.TrimSpace(env("OPENCLAW_CONFIG_PATH"))
+	override := strings.TrimSpace(env("OPENOCTA_CONFIG_PATH"))
 	if override == "" {
 		override = strings.TrimSpace(env("CLAWDBOT_CONFIG_PATH"))
 	}
@@ -80,7 +101,7 @@ func DefaultGatewayPort() int {
 
 // ResolveGatewayPort returns the gateway port from config or env.
 func ResolveGatewayPort(portFromConfig *int, env func(string) string) int {
-	envRaw := strings.TrimSpace(env("OPENCLAW_GATEWAY_PORT"))
+	envRaw := strings.TrimSpace(env("OPENOCTA_GATEWAY_PORT"))
 	if envRaw == "" {
 		envRaw = strings.TrimSpace(env("CLAWDBOT_GATEWAY_PORT"))
 	}
@@ -98,7 +119,7 @@ func ResolveGatewayPort(portFromConfig *int, env func(string) string) int {
 
 // ResolveOAuthDir returns the OAuth credentials directory.
 func ResolveOAuthDir(env func(string) string, stateDir string) string {
-	override := strings.TrimSpace(env("OPENCLAW_OAUTH_DIR"))
+	override := strings.TrimSpace(env("OPENOCTA_OAUTH_DIR"))
 	if override != "" {
 		return expandUserPath(override, env)
 	}
@@ -106,7 +127,7 @@ func ResolveOAuthDir(env func(string) string, stateDir string) string {
 }
 
 func resolveHomeDir(env func(string) string) string {
-	home := env("OPENCLAW_HOME")
+	home := env("OPENOCTA_HOME")
 	if home == "" {
 		home = env("HOME")
 	}

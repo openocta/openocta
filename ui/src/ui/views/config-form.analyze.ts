@@ -78,8 +78,12 @@ function normalizeSchemaNode(
     }
     normalized.properties = normalizedProps;
 
+    const hasNoProperties = Object.keys(properties).length === 0;
     if (schema.additionalProperties === true) {
-      unsupported.add(pathLabel);
+      // Empty object with additionalProperties: true → render as raw JSON, not unsupported
+      if (!hasNoProperties) {
+        unsupported.add(pathLabel);
+      }
     } else if (schema.additionalProperties === false) {
       normalized.additionalProperties = false;
     } else if (schema.additionalProperties && typeof schema.additionalProperties === "object") {

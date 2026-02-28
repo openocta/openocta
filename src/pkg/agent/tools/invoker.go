@@ -1,4 +1,4 @@
-// Package tools bridges OpenClaw tools to agentsdk-go tool.Tool interface.
+// Package tools bridges OpenOcta tools to agentsdk-go tool.Tool interface.
 package tools
 
 // GatewayInvoker invokes gateway methods synchronously (used by agent tools).

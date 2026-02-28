@@ -9,8 +9,8 @@ import (
 
 	"github.com/cexll/agentsdk-go/pkg/api"
 	sdkSkills "github.com/cexll/agentsdk-go/pkg/runtime/skills"
-	agentSkills "github.com/openclaw/openclaw/pkg/agent/skills"
-	"github.com/openclaw/openclaw/pkg/config"
+	agentSkills "github.com/openocta/openocta/pkg/agent/skills"
+	"github.com/openocta/openocta/pkg/config"
 )
 
 // BuildSkillRegistrationsFromThreeLocations loads skills from three locations and returns
@@ -18,7 +18,7 @@ import (
 // 1. Built-in skills (shipped with install: OPENCLAW_BUNDLED_SKILLS_DIR or executable-relative)
 // 2. Managed/local skills (~/.openclaw/skills)
 // 3. Workspace skills (<workspace>/skills, i.e. workspaceDir/skills)
-func BuildSkillRegistrationsFromThreeLocations(workspaceDir string, cfg *config.OpenClawConfig) []api.SkillRegistration {
+func BuildSkillRegistrationsFromThreeLocations(workspaceDir string, cfg *config.OpenOctaConfig) []api.SkillRegistration {
 	opts := &agentSkills.LoadOptions{
 		Config:           cfg,
 		ManagedSkillsDir: "",
@@ -31,8 +31,8 @@ func BuildSkillRegistrationsFromThreeLocations(workspaceDir string, cfg *config.
 	return entriesToSkillRegistrations(entries)
 }
 
-// entriesToSkillRegistrations converts OpenClaw skill entries to agentsdk-go SkillRegistration.
-// It parses name/description from SKILL.md frontmatter (OpenClaw/AgentSkills format), fills
+// entriesToSkillRegistrations converts OPENOCTA skill entries to agentsdk-go SkillRegistration.
+// It parses name/description from SKILL.md frontmatter (OpenOcta/AgentSkills format), fills
 // Definition.Metadata, builds Matchers (e.g. KeywordMatcher from name/description), and
 // a Handler that reads the skill markdown and returns its content as Result.Output.
 func entriesToSkillRegistrations(entries []agentSkills.Entry) []api.SkillRegistration {
@@ -90,7 +90,7 @@ func skillDescription(e agentSkills.Entry) string {
 	return e.Name
 }
 
-// entryToDefinitionMetadata builds a map for Definition.Metadata from Entry (OpenClaw metadata + frontmatter).
+// entryToDefinitionMetadata builds a map for Definition.Metadata from Entry (OpenOcta metadata + frontmatter).
 func entryToDefinitionMetadata(e agentSkills.Entry) map[string]string {
 	m := make(map[string]string)
 	if e.Source != "" {
@@ -199,7 +199,7 @@ func sanitizeSkillName(s string) string {
 }
 
 // LoadSkillsForWorkspace loads skills for a workspace directory.
-func LoadSkillsForWorkspace(workspaceDir string, cfg *config.OpenClawConfig) ([]agentSkills.Entry, error) {
+func LoadSkillsForWorkspace(workspaceDir string, cfg *config.OpenOctaConfig) ([]agentSkills.Entry, error) {
 	opts := &agentSkills.LoadOptions{
 		Config:           cfg,
 		ManagedSkillsDir: "",
@@ -210,7 +210,7 @@ func LoadSkillsForWorkspace(workspaceDir string, cfg *config.OpenClawConfig) ([]
 }
 
 // BuildSkillsPrompt builds a skills prompt string for agent runs.
-func BuildSkillsPrompt(entries []agentSkills.Entry, cfg *config.OpenClawConfig) string {
+func BuildSkillsPrompt(entries []agentSkills.Entry, cfg *config.OpenOctaConfig) string {
 	// Filter entries based on eligibility
 	eligibility := &agentSkills.EligibilityContext{}
 	filtered := agentSkills.FilterEntries(entries, cfg, eligibility)
@@ -221,6 +221,6 @@ func BuildSkillsPrompt(entries []agentSkills.Entry, cfg *config.OpenClawConfig) 
 
 // ApplySkillEnvOverrides applies skill environment variable overrides.
 // Returns a restore function to revert changes.
-func ApplySkillEnvOverrides(entries []agentSkills.Entry, cfg *config.OpenClawConfig) func() {
+func ApplySkillEnvOverrides(entries []agentSkills.Entry, cfg *config.OpenOctaConfig) func() {
 	return agentSkills.ApplyEnvOverrides(entries, cfg)
 }

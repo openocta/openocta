@@ -33,6 +33,7 @@ type Strings = {
   subtitleSkills: string;
   subtitleNodes: string;
   subtitleChat: string;
+  subtitleAgentSwarm: string;
   subtitleConfig: string;
   subtitleDebug: string;
   subtitleLogs: string;
@@ -47,6 +48,8 @@ type Strings = {
   navTitleSkills: string;
   navTitleNodes: string;
   navTitleChat: string;
+  navTitleAgentSwarm: string;
+  agentSwarmDevBadge: string;
   navTitleConfig: string;
   navTitleDebug: string;
   navTitleLogs: string;
@@ -127,6 +130,8 @@ type Strings = {
   channelMode: string;
   channelPublicKey: string;
   channelLastInbound: string;
+  channelActive: string;
+  channelGenericSub: string;
   channelAccounts: string;
   channelWhatsApp: string;
   channelWhatsAppSub: string;
@@ -735,6 +740,7 @@ const EN: Strings = {
   subtitleSkills: "Manage skill availability and API key injection.",
   subtitleNodes: "Paired devices, capabilities, and command exposure.",
   subtitleChat: "Direct gateway chat session for quick interventions.",
+  subtitleAgentSwarm: "Multi-agent swarm collaboration for ops and SRE.",
   subtitleConfig: "Edit ~/.openclaw/openclaw.json safely.",
   subtitleDebug: "Gateway snapshots, events, and manual RPC calls.",
   subtitleLogs: "Live tail of the gateway file logs.",
@@ -748,6 +754,8 @@ const EN: Strings = {
   navTitleSkills: "Skills",
   navTitleNodes: "Nodes",
   navTitleChat: "Chat",
+  navTitleAgentSwarm: "Agent Swarm",
+  agentSwarmDevBadge: "In Development",
   navTitleConfig: "Config",
   navTitleDebug: "Debug",
   navTitleLogs: "Logs",
@@ -825,6 +833,8 @@ const EN: Strings = {
   channelMode: "Mode",
   channelPublicKey: "Public Key",
   channelLastInbound: "Last inbound",
+  channelActive: "Active",
+  channelGenericSub: "Channel status and configuration.",
   channelAccounts: "Accounts",
   channelWhatsApp: "WhatsApp",
   channelWhatsAppSub: "Link WhatsApp Web and monitor connection health.",
@@ -1427,7 +1437,8 @@ const ZH: Strings = {
   subtitleSkills: "管理技能可用性与 API 密钥注入。",
   subtitleNodes: "已配对设备、能力与命令。",
   subtitleChat: "直接与网关聊天进行快速操作。",
-  subtitleConfig: "安全编辑 ~/.openclaw/openclaw.json。",
+  subtitleAgentSwarm: "多Agent集群协作，面向运维与 SRE。",
+  subtitleConfig: "安全编辑 ~/.openocta/openocta.json。",
   subtitleDebug: "网关快照、事件与手动 RPC 调用。",
   subtitleLogs: "网关日志实时查看。",
   navTitleAgents: "代理",
@@ -1440,6 +1451,8 @@ const ZH: Strings = {
   navTitleSkills: "技能",
   navTitleNodes: "节点",
   navTitleChat: "Chat",
+  navTitleAgentSwarm: "Agent Swarm",
+  agentSwarmDevBadge: "开发中",
   navTitleConfig: "配置",
   navTitleDebug: "测试",
   navTitleLogs: "日志",
@@ -1517,6 +1530,8 @@ const ZH: Strings = {
   channelMode: "模式",
   channelPublicKey: "公钥",
   channelLastInbound: "最近入站",
+  channelActive: "活跃",
+  channelGenericSub: "通道状态与配置。",
   channelAccounts: "账号",
   channelWhatsApp: "WhatsApp",
   channelWhatsAppSub: "链接 WhatsApp Web 并监控连接状态。",

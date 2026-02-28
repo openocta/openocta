@@ -11,11 +11,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/openclaw/openclaw/pkg/agent"
-	agentSkills "github.com/openclaw/openclaw/pkg/agent/skills"
-	"github.com/openclaw/openclaw/pkg/config"
-	"github.com/openclaw/openclaw/pkg/gateway/protocol"
-	"github.com/openclaw/openclaw/pkg/paths"
+	"github.com/openocta/openocta/pkg/agent"
+	agentSkills "github.com/openocta/openocta/pkg/agent/skills"
+	"github.com/openocta/openocta/pkg/config"
+	"github.com/openocta/openocta/pkg/gateway/protocol"
+	"github.com/openocta/openocta/pkg/paths"
 )
 
 // SkillsStatusParams holds parameters for skills.status.
@@ -219,7 +219,7 @@ func parseSkillsUpdateParams(params map[string]interface{}) (*SkillsUpdateParams
 // normalizeAgentID and resolveDefaultAgentID are defined in sessions.go
 
 // listAgentIDs lists all agent IDs from config.
-func listAgentIDs(cfg *config.OpenClawConfig) []string {
+func listAgentIDs(cfg *config.OpenOctaConfig) []string {
 	if cfg == nil || cfg.Agents == nil || len(cfg.Agents.List) == 0 {
 		return []string{"main"}
 	}
@@ -240,12 +240,12 @@ func listAgentIDs(cfg *config.OpenClawConfig) []string {
 }
 
 // resolveAgentWorkspaceDir resolves workspace directory for an agent (delegates to agent package).
-func resolveAgentWorkspaceDir(cfg *config.OpenClawConfig, agentID string, env func(string) string) string {
+func resolveAgentWorkspaceDir(cfg *config.OpenOctaConfig, agentID string, env func(string) string) string {
 	return agent.ResolveAgentWorkspaceDir(cfg, agentID, env)
 }
 
 // listWorkspaceDirs lists all workspace directories from config.
-func listWorkspaceDirs(cfg *config.OpenClawConfig, env func(string) string) []string {
+func listWorkspaceDirs(cfg *config.OpenOctaConfig, env func(string) string) []string {
 	dirs := make(map[string]bool)
 	agentIDs := listAgentIDs(cfg)
 	for _, agentID := range agentIDs {
@@ -265,7 +265,7 @@ func listWorkspaceDirs(cfg *config.OpenClawConfig, env func(string) string) []st
 }
 
 // loadWorkspaceSkillEntries loads skill entries from a workspace directory.
-func loadWorkspaceSkillEntries(workspaceDir string, cfg *config.OpenClawConfig) []SkillEntry {
+func loadWorkspaceSkillEntries(workspaceDir string, cfg *config.OpenOctaConfig) []SkillEntry {
 	opts := &agentSkills.LoadOptions{
 		Config:           cfg,
 		ManagedSkillsDir: "",
@@ -383,7 +383,7 @@ func hasBinary(bin string) bool {
 }
 
 // writeConfigFile writes the config to disk.
-func writeConfigFile(cfg *config.OpenClawConfig, env func(string) string) error {
+func writeConfigFile(cfg *config.OpenOctaConfig, env func(string) string) error {
 	stateDir := paths.ResolveStateDir(env)
 	configPath := paths.ResolveCanonicalConfigPath(env, stateDir)
 
@@ -412,7 +412,7 @@ func writeConfigFile(cfg *config.OpenClawConfig, env func(string) string) error 
 }
 
 // resolveSkillConfig resolves skill configuration from config.
-func resolveSkillConfig(cfg *config.OpenClawConfig, skillKey string) *config.SkillConfig {
+func resolveSkillConfig(cfg *config.OpenOctaConfig, skillKey string) *config.SkillConfig {
 	if cfg == nil || cfg.Skills == nil || cfg.Skills.Entries == nil {
 		return nil
 	}
@@ -424,7 +424,7 @@ func resolveSkillConfig(cfg *config.OpenClawConfig, skillKey string) *config.Ski
 }
 
 // resolveBundledAllowlist resolves the bundled skills allowlist from config.
-func resolveBundledAllowlist(cfg *config.OpenClawConfig) []string {
+func resolveBundledAllowlist(cfg *config.OpenOctaConfig) []string {
 	if cfg == nil || cfg.Skills == nil || len(cfg.Skills.AllowBundled) == 0 {
 		return nil
 	}
@@ -457,7 +457,7 @@ func isBundledSkillAllowed(skillName string, skillKey string, source string, all
 }
 
 // resolveConfigPath resolves a config path value (e.g., "browser.enabled").
-func resolveConfigPath(cfg *config.OpenClawConfig, pathStr string) interface{} {
+func resolveConfigPath(cfg *config.OpenOctaConfig, pathStr string) interface{} {
 	if cfg == nil || pathStr == "" {
 		return nil
 	}
@@ -495,7 +495,7 @@ func resolveConfigPath(cfg *config.OpenClawConfig, pathStr string) interface{} {
 }
 
 // isConfigPathTruthy checks if a config path value is truthy.
-func isConfigPathTruthy(cfg *config.OpenClawConfig, pathStr string) bool {
+func isConfigPathTruthy(cfg *config.OpenOctaConfig, pathStr string) bool {
 	value := resolveConfigPath(cfg, pathStr)
 	if value == nil {
 		// Check default values
@@ -521,7 +521,7 @@ func isConfigPathTruthy(cfg *config.OpenClawConfig, pathStr string) bool {
 }
 
 // resolveSkillsInstallPreferences resolves skill installation preferences from config.
-func resolveSkillsInstallPreferences(cfg *config.OpenClawConfig) (preferBrew bool, nodeManager string) {
+func resolveSkillsInstallPreferences(cfg *config.OpenOctaConfig) (preferBrew bool, nodeManager string) {
 	preferBrew = true
 	nodeManager = "npm"
 
@@ -742,7 +742,7 @@ func buildInstallOption(spec *SkillInstallSpec, index int, nodeManager string) S
 }
 
 // buildSkillStatus builds a skill status entry from a skill entry.
-func buildSkillStatus(entry SkillEntry, cfg *config.OpenClawConfig, preferBrew bool, nodeManager string) SkillStatusEntry {
+func buildSkillStatus(entry SkillEntry, cfg *config.OpenOctaConfig, preferBrew bool, nodeManager string) SkillStatusEntry {
 	skillKey := entry.Name
 	if entry.Metadata != nil && entry.Metadata.SkillKey != "" {
 		skillKey = entry.Metadata.SkillKey
@@ -925,7 +925,7 @@ func buildSkillStatus(entry SkillEntry, cfg *config.OpenClawConfig, preferBrew b
 }
 
 // buildWorkspaceSkillStatus builds a skill status report for a workspace.
-func buildWorkspaceSkillStatus(workspaceDir string, cfg *config.OpenClawConfig, env func(string) string) SkillStatusReport {
+func buildWorkspaceSkillStatus(workspaceDir string, cfg *config.OpenOctaConfig, env func(string) string) SkillStatusReport {
 	managedSkillsDir := resolveManagedSkillsDir(env)
 	entries := loadWorkspaceSkillEntries(workspaceDir, cfg)
 
@@ -957,7 +957,7 @@ func SkillsStatusHandler(opts HandlerOpts) error {
 	}
 
 	// Load config
-	var cfg *config.OpenClawConfig
+	var cfg *config.OpenOctaConfig
 	if opts.Context != nil && opts.Context.Config != nil {
 		cfg = opts.Context.Config
 	} else {
@@ -1012,7 +1012,7 @@ func SkillsStatusHandler(opts HandlerOpts) error {
 // SkillsBinsHandler handles "skills.bins".
 func SkillsBinsHandler(opts HandlerOpts) error {
 	// Load config
-	var cfg *config.OpenClawConfig
+	var cfg *config.OpenOctaConfig
 	if opts.Context != nil && opts.Context.Config != nil {
 		cfg = opts.Context.Config
 	} else {
@@ -1091,7 +1091,7 @@ func SkillsUpdateHandler(opts HandlerOpts) error {
 	}
 
 	// Load config
-	var cfg *config.OpenClawConfig
+	var cfg *config.OpenOctaConfig
 	if opts.Context != nil && opts.Context.Config != nil {
 		cfg = opts.Context.Config
 	} else {

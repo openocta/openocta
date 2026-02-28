@@ -9,9 +9,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
-	"github.com/openclaw/openclaw/pkg/gateway/handlers"
-	"github.com/openclaw/openclaw/pkg/gateway/protocol"
-	"github.com/openclaw/openclaw/pkg/logging"
+	"github.com/openocta/openocta/pkg/gateway/handlers"
+	"github.com/openocta/openocta/pkg/gateway/protocol"
+	"github.com/openocta/openocta/pkg/logging"
 )
 
 var wsLog = logging.Sub("ws")

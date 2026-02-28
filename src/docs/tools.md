@@ -5,7 +5,7 @@ OctopusClaw 的工具系统基于 [`agentsdk-go` 的 Tool 抽象](https://github
 在运行时，工具主要分为三类：
 
 1. **内置通用工具**（文件/搜索/Web/任务等）  
-2. **OpenClaw 扩展工具**（cron、sessions、gateway_config、echo 等）  
+2. **OpenOcta 扩展工具**（cron、sessions、gateway_config、echo 等）  
 3. **用户自定义工具**（根据项目需求扩展）
 
 ---
@@ -32,7 +32,7 @@ tools := BuiltinTools(projectRoot)
 
 ---
 
-## 二、OpenClaw 扩展工具
+## 二、OpenOcta 扩展工具
 
 定义于 `pkg/agent/tools`，用于桥接 Gateway 与内部能力：
 
@@ -45,7 +45,7 @@ tools := BuiltinTools(projectRoot)
 
 详细说明见：
 
-- `tools-openclaw.md`
+- `tools-openocta.md`
 
 ---
 
@@ -81,7 +81,7 @@ type Tool interface {
 
 具体示例与代码片段，请参考：
 
-- `tools-openclaw.md` 中的「如何自定义一个工具并注册」小节。
+- `tools-openocta.md` 中的「如何自定义一个工具并注册」小节。
 
 ---
 

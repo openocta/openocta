@@ -62,6 +62,7 @@ const debouncedLoadUsage = (state: UsageState) => {
   }
   usageDateDebounceTimeout = window.setTimeout(() => void loadUsage(state), 400);
 };
+import { renderAgentSwarm } from "./views/agent-swarm.ts";
 import { renderAgents } from "./views/agents.ts";
 import { renderChannels } from "./views/channels.ts";
 import { renderChat } from "./views/chat.ts";
@@ -196,7 +197,7 @@ export function renderApp(state: AppViewState) {
           </div>
         </div>
       </aside>
-      <main class="content ${isChat ? "content--chat" : ""}">
+      <main class="content ${isChat ? "content--chat" : ""} ${state.tab === "agentSwarm" ? "content--agent-swarm" : ""}">
         <section class="content-header">
           <div>
             ${state.tab === "usage" ? nothing : html`<div class="page-title">${titleForTab(state.tab)}</div>`}
@@ -1128,6 +1129,12 @@ export function renderApp(state: AppViewState) {
                 assistantName: state.assistantName,
                 assistantAvatar: state.assistantAvatar,
               })
+            : nothing
+        }
+
+        ${
+          state.tab === "agentSwarm"
+            ? renderAgentSwarm()
             : nothing
         }
 

@@ -1,5 +1,5 @@
-// Package config defines the full OpenClaw configuration schema.
-// Compatible with ~/.openclaw/openclaw.json and zod schemas in src/config/.
+// Package config defines the full OpenOcta configuration schema.
+// Compatible with ~/.openocta/openocta.json and zod schemas in src/config/.
 package config
 
 import (
@@ -17,9 +17,9 @@ type LoggingConfig struct {
 	RedactPatterns  []string `json:"redactPatterns,omitempty"`
 }
 
-// OpenClawConfig is the root configuration structure.
-// Mirrors OpenClawConfig from src/config/types.openclaw.ts.
-type OpenClawConfig struct {
+// OpenOctaConfig is the root configuration structure.
+// Mirrors OpenOctaConfig from src/config/types.openclaw.ts.
+type OpenOctaConfig struct {
 	Meta        *ConfigMeta        `json:"meta,omitempty"`
 	Auth        *AuthConfig        `json:"auth,omitempty"`
 	Env         *EnvConfig         `json:"env,omitempty"`

@@ -2,6 +2,7 @@ import type { ConfigUiHints } from "../types.ts";
 
 export type JsonSchema = {
   type?: string | string[];
+  format?: string;
   title?: string;
   description?: string;
   properties?: Record<string, JsonSchema>;

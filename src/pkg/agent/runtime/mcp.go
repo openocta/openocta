@@ -1,10 +1,10 @@
-// Package runtime: build MCPServers list from OpenClaw config for api.Options.
+// Package runtime: build MCPServers list from OpenOcta config for api.Options.
 package runtime
 
 import (
 	"strings"
 
-	"github.com/openclaw/openclaw/pkg/config"
+	"github.com/openocta/openocta/pkg/config"
 )
 
 // BuildMCPServersFromConfig converts config.Mcp.Servers to a list of MCP server spec strings
@@ -13,7 +13,7 @@ import (
 // - url when URL is set (SSE/HTTP)
 // - stdio spec for known Service+ServiceURL (e.g. prometheus -> npx -y prometheus-mcp-server)
 // Disabled servers are skipped.
-func BuildMCPServersFromConfig(cfg *config.OpenClawConfig) []string {
+func BuildMCPServersFromConfig(cfg *config.OpenOctaConfig) []string {
 	if cfg == nil || cfg.Mcp == nil || len(cfg.Mcp.Servers) == 0 {
 		return nil
 	}

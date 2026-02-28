@@ -8,14 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.1] — 2026-02-16
 
 ### Added
-- Discord v2 delivery guidance in `SKILL.md` for OpenClaw v2026.2.14+:
+- Discord v2 delivery guidance in `SKILL.md` for OpenOcta v2026.2.14+:
   - Compact first response for triage
   - Component-style quick actions
   - Numbered fallback when components are unavailable
 - `discord` and `discord-v2` tags in skill metadata
 
 ### Changed
-- README: added "OpenClaw Discord v2 Ready" compatibility section and bumped version badge to `1.0.1`.
+- README: added "OpenOcta Discord v2 Ready" compatibility section and bumped version badge to `1.0.1`.
 
 ### Fixed
 - `kube-medic.sh`: standardized error JSON emission through `jq -n --arg` for safer structured output.

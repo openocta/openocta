@@ -14,7 +14,7 @@ func TestResolveStateDir(t *testing.T) {
 	if dir == "" {
 		t.Fatal("expected non-empty state dir")
 	}
-	// Default should be ~/.openclaw or contain .openclaw
+	// Default should be ~/.openocta or contain .openocta
 	if !filepath.IsAbs(dir) {
 		t.Errorf("expected absolute path, got %q", dir)
 	}
@@ -22,8 +22,8 @@ func TestResolveStateDir(t *testing.T) {
 
 func TestResolveStateDirOverride(t *testing.T) {
 	tmp := t.TempDir()
-	os.Setenv("OPENCLAW_STATE_DIR", tmp)
-	defer os.Unsetenv("OPENCLAW_STATE_DIR")
+	os.Setenv("OPENOCTA_STATE_DIR", tmp)
+	defer os.Unsetenv("OPENOCTA_STATE_DIR")
 	env := func(key string) string { return os.Getenv(key) }
 	dir := ResolveStateDir(env)
 	if dir != tmp {

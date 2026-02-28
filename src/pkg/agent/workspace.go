@@ -6,15 +6,15 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/openclaw/openclaw/pkg/config"
-	"github.com/openclaw/openclaw/pkg/paths"
+	"github.com/openocta/openocta/pkg/config"
+	"github.com/openocta/openocta/pkg/paths"
 )
 
 // ResolveAgentWorkspaceDir returns the workspace directory for an agent.
 // Priority: agents.list[].workspace for the agent > agents.defaults.workspace (if default agent) >
-// ~/.openclaw/workspace or ~/.openclaw/workspace-{profile} (default agent) > ~/.openclaw/agents/<id>/workspace.
-// env is used for OPENCLAW_PROFILE, OPENCLAW_STATE_DIR, HOME (e.g. os.Getenv).
-func ResolveAgentWorkspaceDir(cfg *config.OpenClawConfig, agentID string, env func(string) string) string {
+// ~/.openocta/workspace or ~/.openocta/workspace-{profile} (default agent) > ~/.openocta/agents/<id>/workspace.
+// env is used for OPENOCTA_PROFILE, OPENOCTA_STATE_DIR, HOME (e.g. os.Getenv).
+func ResolveAgentWorkspaceDir(cfg *config.OpenOctaConfig, agentID string, env func(string) string) string {
 	id := strings.TrimSpace(strings.ToLower(agentID))
 	if id == "" {
 		id = "main"
@@ -34,8 +34,8 @@ func ResolveAgentWorkspaceDir(cfg *config.OpenClawConfig, agentID string, env fu
 				return expandUserPath(w, env)
 			}
 		}
-		// OPENCLAW_PROFILE → workspace-{profile}, else workspace
-		profile := strings.TrimSpace(env("OPENCLAW_PROFILE"))
+		// OPENOCTA_PROFILE → workspace-{profile}, else workspace
+		profile := strings.TrimSpace(env("OPENOCTA_PROFILE"))
 		if profile != "" && strings.ToLower(profile) != "default" {
 			return filepath.Join(paths.ResolveStateDir(env), "workspace-"+profile)
 		}
@@ -47,7 +47,7 @@ func ResolveAgentWorkspaceDir(cfg *config.OpenClawConfig, agentID string, env fu
 }
 
 // resolveDefaultAgentID returns the default agent ID (first with default=true, or first in list).
-func resolveDefaultAgentID(cfg *config.OpenClawConfig) string {
+func resolveDefaultAgentID(cfg *config.OpenOctaConfig) string {
 	if cfg == nil || cfg.Agents == nil || len(cfg.Agents.List) == 0 {
 		return "main"
 	}

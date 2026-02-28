@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/openclaw/openclaw/pkg/config"
-	"github.com/openclaw/openclaw/pkg/gateway/handlers"
-	"github.com/openclaw/openclaw/pkg/logging"
+	"github.com/openocta/openocta/pkg/config"
+	"github.com/openocta/openocta/pkg/gateway/handlers"
+	"github.com/openocta/openocta/pkg/logging"
 )
 
 var hooksLog = logging.Sub("hooks")
@@ -31,7 +31,7 @@ func extractHooksToken(r *http.Request) string {
 	if strings.HasPrefix(auth, "Bearer ") {
 		return strings.TrimSpace(strings.TrimPrefix(auth, "Bearer "))
 	}
-	if got := strings.TrimSpace(r.Header.Get("X-OpenClaw-Token")); got != "" {
+	if got := strings.TrimSpace(r.Header.Get("X-OpenOcta-Token")); got != "" {
 		return got
 	}
 	if got := strings.TrimSpace(r.URL.Query().Get("token")); got != "" {
@@ -280,11 +280,10 @@ func (s *Server) handleHooksAgentWithMapping(w http.ResponseWriter, r *http.Requ
 }
 
 // handleHooksAlert handles POST /hooks/alert.
-// It creates a new session key for this alert, saves session info to sessions.json,
-// then invokes chat.send to analyze and handle the alert.
+// 与 HooksAgent 保持相同消息发送逻辑：通过 HooksAgent 调用 sessions.reset + chat.send。
 func (s *Server) handleHooksAlert(w http.ResponseWriter, r *http.Request, ctx *handlers.Context) {
-	if ctx == nil || ctx.InvokeMethod == nil {
-		hooksLog.Warn("hooks alert not available (InvokeMethod not configured)")
+	if ctx == nil || ctx.HooksAgent == nil {
+		hooksLog.Warn("hooks alert not available (HooksAgent not configured)")
 		http.Error(w, "alert hook not available", http.StatusNotImplemented)
 		return
 	}
@@ -308,66 +307,23 @@ func (s *Server) handleHooksAlert(w http.ResponseWriter, r *http.Request, ctx *h
 		body.Message = rawStr
 	}
 
-	// Build a descriptive prompt for the agent to analyze this alert.
 	alertPrompt := buildAlertPrompt(body)
-
-	// Generate a new sessionKey for this alert:
-	// agent:main:alert:<UUID>
 	alertUUID := uuid.New().String()
 	sessionKey := fmt.Sprintf("agent:main:alert:%s", alertUUID)
 
-	// 1) Create/reset session in sessions.json via sessions.reset
-	resetParams := map[string]interface{}{
-		"key": sessionKey,
-	}
-	ok, payload, errShape := ctx.InvokeMethod("sessions.reset", resetParams)
-	if !ok || errShape != nil {
-		hooksLog.Warn("sessions.reset failed for alert sessionKey=%s err=%v", sessionKey, errShape)
-		http.Error(w, "failed to create alert session", http.StatusInternalServerError)
-		return
-	}
-
-	// Try to extract canonical sessionKey and sessionId from response (best-effort).
-	var sessionID string
-	if m, ok := payload.(map[string]interface{}); ok {
-		if keyVal, ok := m["key"].(string); ok && keyVal != "" {
-			sessionKey = keyVal
-		}
-		if entry, ok := m["entry"].(map[string]interface{}); ok {
-			if sid, ok := entry["sessionId"].(string); ok {
-				sessionID = sid
-			}
-		}
-	}
-
-	// 2) Call chat.send to analyze this alert using the new session.
-	chatParams := map[string]interface{}{
-		"message":    alertPrompt,
-		"sessionKey": sessionKey,
-	}
-	ok, payload, errShape = ctx.InvokeMethod("chat.send", chatParams)
-	if !ok || errShape != nil {
-		hooksLog.Warn("chat.send failed for alert sessionKey=%s err=%v", sessionKey, errShape)
-		http.Error(w, "failed to dispatch alert to agent", http.StatusInternalServerError)
-		return
-	}
-
-	runID := ""
-	if m, ok := payload.(map[string]interface{}); ok {
-		if rid, ok := m["runId"].(string); ok {
-			runID = rid
-		}
-	}
+	runID := ctx.HooksAgent(handlers.HooksAgentParams{
+		Message:    alertPrompt,
+		Name:       "Alert",
+		SessionKey: sessionKey,
+		WakeMode:   "now",
+		Deliver:    true,
+	})
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
-	// Return runId and sessionKey for tracking; sessionId is optional.
 	resp := map[string]interface{}{
 		"runId":      runID,
 		"sessionKey": sessionKey,
-	}
-	if sessionID != "" {
-		resp["sessionId"] = sessionID
 	}
 	_ = json.NewEncoder(w).Encode(resp)
 }

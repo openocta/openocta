@@ -21,7 +21,7 @@ health checks, and resource management.
 
 ## Installation
 
-### OpenClaw / Moltbot / Clawbot
+### OpenOcta / Moltbot / Clawbot
 
 ```bash
 npx clawhub@latest install kubernetes

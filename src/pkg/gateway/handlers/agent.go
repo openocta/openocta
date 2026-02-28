@@ -9,11 +9,11 @@ import (
 
 	"github.com/cexll/agentsdk-go/pkg/api"
 	"github.com/google/uuid"
-	"github.com/openclaw/openclaw/pkg/agent"
-	"github.com/openclaw/openclaw/pkg/agent/runtime"
-	"github.com/openclaw/openclaw/pkg/agent/tools"
-	"github.com/openclaw/openclaw/pkg/config"
-	"github.com/openclaw/openclaw/pkg/gateway/protocol"
+	"github.com/openocta/openocta/pkg/agent"
+	"github.com/openocta/openocta/pkg/agent/runtime"
+	"github.com/openocta/openocta/pkg/agent/tools"
+	"github.com/openocta/openocta/pkg/config"
+	"github.com/openocta/openocta/pkg/gateway/protocol"
 )
 
 // AgentHandler handles "agent" (simplified: local run, no streaming/delivery).
@@ -59,7 +59,7 @@ func AgentHandler(opts HandlerOpts) error {
 		}
 	}
 	projectRoot := "."
-	var runtimeConfig *config.OpenClawConfig
+	var runtimeConfig *config.OpenOctaConfig
 	if opts.Context != nil && opts.Context.Config != nil {
 		runtimeConfig = opts.Context.Config
 		projectRoot = agent.ResolveAgentWorkspaceDir(opts.Context.Config, "main", os.Getenv)

@@ -35,7 +35,7 @@ var (
 )
 
 // InitGlobal initializes the global logger: console (text) + file (JSON, daily path).
-// If logDir is empty, ResolvePreferredLogDir() is used (/tmp/openclaw).
+// If logDir is empty, ResolvePreferredLogDir() is used (/tmp/openocta).
 func InitGlobal(logDir string, opts GlobalOpts) {
 	globalMu.Lock()
 	defer globalMu.Unlock()

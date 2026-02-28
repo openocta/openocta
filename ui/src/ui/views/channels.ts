@@ -195,7 +195,7 @@ function renderGenericChannelCard(
   return html`
     <div class="card">
       <div class="card-title">${label}</div>
-      <div class="card-sub">Channel status and configuration.</div>
+      <div class="card-sub">${t("channelGenericSub")}</div>
       ${accountCountLabel}
 
       ${
@@ -208,16 +208,16 @@ function renderGenericChannelCard(
           : html`
             <div class="status-list" style="margin-top: 16px;">
               <div>
-                <span class="label">Configured</span>
-                <span>${configured == null ? "n/a" : configured ? "Yes" : "No"}</span>
+                <span class="label">${t("channelConfigured")}</span>
+                <span>${configured == null ? t("commonNA") : configured ? t("commonYes") : t("commonNo")}</span>
               </div>
               <div>
-                <span class="label">Running</span>
-                <span>${running == null ? "n/a" : running ? "Yes" : "No"}</span>
+                <span class="label">${t("channelRunning")}</span>
+                <span>${running == null ? t("commonNA") : running ? t("commonYes") : t("commonNo")}</span>
               </div>
               <div>
-                <span class="label">Connected</span>
-                <span>${connected == null ? "n/a" : connected ? "Yes" : "No"}</span>
+                <span class="label">${t("channelConnected")}</span>
+                <span>${connected == null ? t("commonNA") : connected ? t("commonYes") : t("commonNo")}</span>
               </div>
             </div>
           `
@@ -259,29 +259,31 @@ function hasRecentActivity(account: ChannelAccountSnapshot): boolean {
   return Date.now() - account.lastInboundAt < RECENT_ACTIVITY_THRESHOLD_MS;
 }
 
-function deriveRunningStatus(account: ChannelAccountSnapshot): "Yes" | "No" | "Active" {
+type StatusKey = "commonYes" | "commonNo" | "channelActive" | "commonNA";
+
+function deriveRunningStatus(account: ChannelAccountSnapshot): StatusKey {
   if (account.running) {
-    return "Yes";
+    return "commonYes";
   }
   // If we have recent inbound activity, the channel is effectively running
   if (hasRecentActivity(account)) {
-    return "Active";
+    return "channelActive";
   }
-  return "No";
+  return "commonNo";
 }
 
-function deriveConnectedStatus(account: ChannelAccountSnapshot): "Yes" | "No" | "Active" | "n/a" {
+function deriveConnectedStatus(account: ChannelAccountSnapshot): StatusKey {
   if (account.connected === true) {
-    return "Yes";
+    return "commonYes";
   }
   if (account.connected === false) {
-    return "No";
+    return "commonNo";
   }
   // If connected is null/undefined but we have recent activity, show as active
   if (hasRecentActivity(account)) {
-    return "Active";
+    return "channelActive";
   }
-  return "n/a";
+  return "commonNA";
 }
 
 function renderGenericAccount(account: ChannelAccountSnapshot) {
@@ -296,20 +298,20 @@ function renderGenericAccount(account: ChannelAccountSnapshot) {
       </div>
       <div class="status-list account-card-status">
         <div>
-          <span class="label">Running</span>
-          <span>${runningStatus}</span>
+          <span class="label">${t("channelRunning")}</span>
+          <span>${t(runningStatus)}</span>
         </div>
         <div>
-          <span class="label">Configured</span>
-          <span>${account.configured ? "Yes" : "No"}</span>
+          <span class="label">${t("channelConfigured")}</span>
+          <span>${account.configured ? t("commonYes") : t("commonNo")}</span>
         </div>
         <div>
-          <span class="label">Connected</span>
-          <span>${connectedStatus}</span>
+          <span class="label">${t("channelConnected")}</span>
+          <span>${t(connectedStatus)}</span>
         </div>
         <div>
-          <span class="label">Last inbound</span>
-          <span>${account.lastInboundAt ? formatAgo(account.lastInboundAt) : "n/a"}</span>
+          <span class="label">${t("channelLastInbound")}</span>
+          <span>${account.lastInboundAt ? formatAgo(account.lastInboundAt) : t("commonNA")}</span>
         </div>
         ${
           account.lastError

@@ -1,4 +1,4 @@
-// Package hooks provides the OpenClaw hook system for agent events.
+// Package hooks provides the OpenOcta hook system for agent events.
 package hooks
 
 import "time"

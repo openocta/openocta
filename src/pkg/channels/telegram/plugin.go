@@ -2,7 +2,7 @@
 package telegram
 
 import (
-	"github.com/openclaw/openclaw/pkg/channels"
+	"github.com/openocta/openocta/pkg/channels"
 )
 
 const channelID = "telegram"

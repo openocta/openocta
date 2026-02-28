@@ -6,12 +6,12 @@ import (
 	"fmt"
 
 	"github.com/cexll/agentsdk-go/pkg/tool"
-	"github.com/openclaw/openclaw/pkg/agent/tools"
-	"github.com/openclaw/openclaw/pkg/channels"
-	"github.com/openclaw/openclaw/pkg/config"
-	"github.com/openclaw/openclaw/pkg/cron"
-	"github.com/openclaw/openclaw/pkg/gateway/protocol"
-	"github.com/openclaw/openclaw/pkg/outbound"
+	"github.com/openocta/openocta/pkg/agent/tools"
+	"github.com/openocta/openocta/pkg/channels"
+	"github.com/openocta/openocta/pkg/config"
+	"github.com/openocta/openocta/pkg/cron"
+	"github.com/openocta/openocta/pkg/gateway/protocol"
+	"github.com/openocta/openocta/pkg/outbound"
 )
 
 // gatewayInvokerAdapter adapts Context.InvokeMethod to tools.GatewayInvoker.
@@ -75,7 +75,7 @@ type Context struct {
 	// AgentRunSeq tracks sequence numbers for agent/chat events (map[runId]seq)
 	AgentRunSeq map[string]int64
 	// Config holds the loaded configuration (cached for performance)
-	Config *config.OpenClawConfig
+	Config *config.OpenOctaConfig
 	// MCPTools returns agent tools from configured MCP servers (prometheus, etc.). Nil if MCP not configured.
 	MCPTools func(ctx context.Context) ([]tool.Tool, error)
 	// InvokeMethod synchronously invokes a gateway method (used by agent tools). Set by server after registry is built.
@@ -84,6 +84,10 @@ type Context struct {
 	HooksWake func(text string, mode string)
 	// HooksAgent is called for POST /hooks/agent. Returns runId; if nil, hooks handler returns 501.
 	HooksAgent func(params HooksAgentParams) (runID string)
+	// ChannelManager holds runtime channels (IM integrations). Nil if runtime channels are disabled.
+	ChannelManager *channels.Manager
+	// MarkChannelLoggedOut is called after successful logout to update in-memory state. Nil to skip.
+	MarkChannelLoggedOut func(channelId string, cleared bool, accountId string)
 }
 
 // HooksAgentParams is the input for HooksAgent callback.
@@ -95,6 +99,7 @@ type HooksAgentParams struct {
 	Deliver        bool
 	Channel        string
 	To             string
+	ChatType       string // "dm"|"group"|"channel" 等，供 QQ 等通道区分发送 API
 	Model          string
 	Thinking       string
 	TimeoutSeconds *int

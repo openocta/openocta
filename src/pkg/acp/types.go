@@ -28,7 +28,7 @@ var AgentInfo = struct {
 	Title   string
 	Version string
 }{
-	Name:    "openclaw-acp",
+	Name:    "openocta-acp",
 	Title:   "OpenOcta ACP Gateway",
 	Version: "0.0.1-dev",
 }

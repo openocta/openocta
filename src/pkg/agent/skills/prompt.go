@@ -4,7 +4,7 @@ package skills
 import (
 	"strings"
 
-	"github.com/openclaw/openclaw/pkg/config"
+	"github.com/openocta/openocta/pkg/config"
 )
 
 // BuildPrompt builds a skills prompt string from skill entries.
@@ -39,7 +39,7 @@ func BuildPrompt(entries []Entry) string {
 // ResolvePromptForRun resolves the skills prompt for an agent run.
 func ResolvePromptForRun(params struct {
 	Entries      []Entry
-	Config       *config.OpenClawConfig
+	Config       *config.OpenOctaConfig
 	WorkspaceDir string
 }) string {
 	if len(params.Entries) == 0 {
@@ -51,6 +51,6 @@ func ResolvePromptForRun(params struct {
 }
 
 // FilterForRun filters skill entries for agent run (excludes disabled, checks eligibility).
-func FilterForRun(entries []Entry, cfg *config.OpenClawConfig, eligibility *EligibilityContext) []Entry {
+func FilterForRun(entries []Entry, cfg *config.OpenOctaConfig, eligibility *EligibilityContext) []Entry {
 	return FilterEntries(entries, cfg, eligibility)
 }

@@ -377,6 +377,90 @@ function renderTextInput(params: {
   `;
 }
 
+function renderJsonInput(params: {
+  schema: JsonSchema;
+  value: unknown;
+  path: Array<string | number>;
+  hints: ConfigUiHints;
+  disabled: boolean;
+  showLabel?: boolean;
+  onPatch: (path: Array<string | number>, value: unknown) => void;
+}): TemplateResult {
+  const { schema, value, path, hints, disabled, onPatch } = params;
+  const showLabel = params.showLabel ?? true;
+  const hint = hintForPath(path, hints);
+  const label = getConfigFieldLabel(
+    path,
+    hint?.label ?? schema.title ?? humanize(String(path.at(-1))),
+  );
+  const help = getConfigFieldHelp(path, hint?.help ?? schema.description ?? "");
+  const displayValue = value ?? schema.default;
+  let jsonStr: string;
+  if (typeof displayValue === "string") {
+    try {
+      jsonStr = JSON.stringify(JSON.parse(displayValue), null, 2);
+    } catch {
+      jsonStr = displayValue;
+    }
+  } else {
+    jsonStr = jsonValue(displayValue);
+  }
+
+  return html`
+    <div class="cfg-field">
+      ${showLabel ? html`<label class="cfg-field__label">${label}</label>` : nothing}
+      ${help ? html`<div class="cfg-field__help">${help}</div>` : nothing}
+      <div class="cfg-input-wrap cfg-input-wrap--textarea">
+        <textarea
+          class="cfg-textarea cfg-textarea--json"
+          rows="6"
+          placeholder="{}"
+          .value=${jsonStr}
+          ?disabled=${disabled}
+          @input=${(e: Event) => {
+            const raw = (e.target as HTMLTextAreaElement).value;
+            if (raw.trim() === "") {
+              onPatch(path, undefined);
+              return;
+            }
+            try {
+              onPatch(path, JSON.parse(raw));
+            } catch {
+              // Keep invalid JSON in textarea; user can fix
+            }
+          }}
+          @change=${(e: Event) => {
+            const raw = (e.target as HTMLTextAreaElement).value.trim();
+            if (!raw) {
+              onPatch(path, undefined);
+              return;
+            }
+            try {
+              onPatch(path, JSON.parse(raw));
+            } catch {
+              const target = e.target as HTMLTextAreaElement;
+              target.value = jsonValue(value ?? schema.default);
+            }
+          }}
+        ></textarea>
+        ${
+          schema.default !== undefined
+            ? html`
+          <button
+            type="button"
+            class="cfg-input__reset"
+            title="Reset to default"
+            ?disabled=${disabled}
+            @click=${() => onPatch(path, schema.default)}
+          >↺</button>
+        `
+            : nothing
+        }
+      </div>
+    </div>
+  `;
+}
+
 function renderNumberInput(params: {
   schema: JsonSchema;
   value: unknown;
@@ -489,6 +573,22 @@ function renderObject(params: {
   onPatch: (path: Array<string | number>, value: unknown) => void;
 }): TemplateResult {
   const { schema, value, path, hints, unsupported, disabled, onPatch } = params;
+  const props = schema.properties ?? {};
+  const hasNoProperties = Object.keys(props).length === 0;
+
+  // Empty object with additionalProperties: true → render as raw JSON textarea
+  if (hasNoProperties && schema.additionalProperties === true) {
+    return renderJsonInput({
+      schema: { ...schema, format: "json" },
+      value,
+      path,
+      hints,
+      disabled,
+      showLabel: params.showLabel,
+      onPatch,
+    });
+  }
+
   const hint = hintForPath(path, hints);
   const label = getConfigFieldLabel(
     path,
@@ -501,7 +601,6 @@ function renderObject(params: {
     fallback && typeof fallback === "object" && !Array.isArray(fallback)
       ? (fallback as Record<string, unknown>)
       : {};
-  const props = schema.properties ?? {};
   const entries = Object.entries(props);
 
   // Sort by hint order

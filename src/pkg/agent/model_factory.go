@@ -8,7 +8,7 @@ import (
 
 	"github.com/cexll/agentsdk-go/pkg/api"
 	"github.com/cexll/agentsdk-go/pkg/model"
-	"github.com/openclaw/openclaw/pkg/config"
+	"github.com/openocta/openocta/pkg/config"
 )
 
 // ResolveSessionAgentID resolves agent ID from sessionKey.
@@ -25,7 +25,7 @@ func ResolveSessionAgentID(sessionKey string) string {
 }
 
 // resolveAgentConfig finds agent config by ID, or returns default agent.
-func resolveAgentConfig(cfg *config.OpenClawConfig, agentID string) *config.AgentConfig {
+func resolveAgentConfig(cfg *config.OpenOctaConfig, agentID string) *config.AgentConfig {
 	if cfg == nil || cfg.Agents == nil || len(cfg.Agents.List) == 0 {
 		return nil
 	}
@@ -60,7 +60,7 @@ func resolveModelFromConfig(modelRef string) (provider string, modelID string) {
 }
 
 // getEnvVar returns config.env.vars[key] or os.Getenv(key).
-func getEnvVar(cfg *config.OpenClawConfig, key string) string {
+func getEnvVar(cfg *config.OpenOctaConfig, key string) string {
 	if cfg != nil && cfg.Env != nil && cfg.Env.Vars != nil {
 		if val, ok := cfg.Env.Vars[key]; ok && val != "" {
 			return val
@@ -70,7 +70,7 @@ func getEnvVar(cfg *config.OpenClawConfig, key string) string {
 }
 
 // resolveAgentModelRef returns the primary model reference from agent config or defaults.
-func resolveAgentModelRef(cfg *config.OpenClawConfig, agentID string) string {
+func resolveAgentModelRef(cfg *config.OpenOctaConfig, agentID string) string {
 	agentCfg := resolveAgentConfig(cfg, agentID)
 	if agentCfg != nil && agentCfg.Model != nil {
 		if modelStr, ok := agentCfg.Model.(string); ok && modelStr != "" {
@@ -92,7 +92,7 @@ func resolveAgentModelRef(cfg *config.OpenClawConfig, agentID string) string {
 
 // CreateModelFactoryFromConfig creates a ModelFactory from config.
 // It checks config.models.providers first, then falls back to built-in providers.
-func CreateModelFactoryFromConfig(cfg *config.OpenClawConfig, agentID string) (api.ModelFactory, error) {
+func CreateModelFactoryFromConfig(cfg *config.OpenOctaConfig, agentID string) (api.ModelFactory, error) {
 	modelRef := resolveAgentModelRef(cfg, agentID)
 	provider, modelID := resolveModelFromConfig(modelRef)
 

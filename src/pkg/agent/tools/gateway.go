@@ -19,7 +19,7 @@ func (GatewayTool) Name() string {
 
 // Description returns the tool description.
 func (GatewayTool) Description() string {
-	return "Read OpenClaw config or config schema. Actions: get, schema."
+	return "Read OpenOcta config or config schema. Actions: get, schema."
 }
 
 // Schema returns the parameter schema.

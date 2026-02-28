@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/cexll/agentsdk-go/pkg/tool"
-	"github.com/openclaw/openclaw/pkg/session"
+	"github.com/openocta/openocta/pkg/session"
 )
 
 // SessionIDFromSessionKey derives a session ID from a session key when no store is available.

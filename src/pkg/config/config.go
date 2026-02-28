@@ -7,7 +7,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/openclaw/openclaw/pkg/paths"
+	"github.com/openocta/openocta/embed"
+	"github.com/openocta/openocta/pkg/paths"
 )
 
 // EnvGetter returns an environment variable value by name.
@@ -20,22 +21,35 @@ func DefaultEnv(key string) string {
 
 // Load reads and parses the config file.
 // Loads .env from the current working directory first so declared env vars are visible.
-// Returns default config if file does not exist or is empty.
-func Load(env EnvGetter) (*OpenClawConfig, error) {
+// If the config file does not exist, initializes from embedded openocta.json.example
+// (writes it to the config path so the user can edit it).
+// Returns default config if file is empty.
+func Load(env EnvGetter) (*OpenOctaConfig, error) {
 	_ = LoadEnvFromCurrentDir() // best-effort: .env from cwd
 	if env == nil {
 		env = DefaultEnv
 	}
 	stateDir := paths.ResolveStateDir(env)
 	configPath := paths.ResolveConfigPath(env, stateDir)
+	canonicalPath := paths.ResolveCanonicalConfigPath(env, stateDir)
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return &OpenClawConfig{}, nil
+			// Initialize from embedded openocta.json.example
+			example, eErr := embed.ConfigExampleJSON()
+			if eErr == nil && len(example) > 0 {
+				if mkErr := os.MkdirAll(stateDir, 0700); mkErr == nil {
+					_ = os.WriteFile(canonicalPath, example, 0600)
+				}
+				data = example
+			} else {
+				return &OpenOctaConfig{}, nil
+			}
+		} else {
+			return nil, err
 		}
-		return nil, err
 	}
-	var cfg OpenClawConfig
+	var cfg OpenOctaConfig
 	if len(data) == 0 {
 		return &cfg, nil
 	}
@@ -68,7 +82,7 @@ func EnsureDefaultConfig(env EnvGetter) error {
 	modeOff := "off"
 	port := 18789
 	resetOnExit := false
-	cfg := &OpenClawConfig{
+	cfg := &OpenOctaConfig{
 		Meta: &ConfigMeta{
 			LastTouchedVersion: "2026.2.9",
 			LastTouchedAt:      time.Now().UTC().Format(time.RFC3339Nano),

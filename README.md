@@ -1,6 +1,18 @@
 # Octopus
 
-基于 [OpenClaw](https://github.com/openclaw/openclaw) 的 Go 后端 + Control UI 前端一体化项目。后端由 TypeScript/Node.js 迁移至 Go，与 Gateway WebSocket 协议及官方 Control UI 行为兼容。
+> English version: see `README.en.md`.  
+> 英文说明请查看 `README.en.md`。
+
+基于 [OpenClaw](https://github.com/openocta/openocta) 的 Go 后端 + Control UI 前端一体化项目。后端由 TypeScript/Node.js 迁移至 Go，与 Gateway WebSocket 协议及官方 Control UI 行为兼容。
+
+## 文档语言映射
+
+- **中文文档**
+  - 根文档：`README.md`（本文件）
+  - 后端：`src/README.md`
+  - 前端：`ui/README.md`
+- **English Docs**
+  - Root: `README.en.md`
 
 ---
 
@@ -23,7 +35,7 @@
 | 维度 | 优点 | 缺点 / 注意点 |
 |------|------|----------------|
 | **部署与运维** | 单一二进制、无 Node 依赖、易容器化、适合无桌面服务器 | 需重新构建/发布 Go 版本，与上游 OpenClaw 功能需主动同步 |
-| **性能与资源** | 内存与 CPU 占用更可控，启动快 | 复杂 UI/前端仍为独立前端项目，后端仅负责 Gateway/Agent |
+| **性能与资源** | 内存与 CPU 占用更可控，启动快；前端已嵌入单一二进制 | 构建时需 Node 编译前端，生产运行无需 Node |
 | **企业集成** | 便于对接内部 API、监控、CLI，扩展点更清晰 | 企业定制需在本仓库内维护，与上游功能分叉需有策略 |
 | **生态与协议** | agentsdk-go 与官方对齐，Gateway 协议兼容现有 Control UI | 部分 OpenClaw 原生的桌面/多通道能力不在此项目主路径，需按需裁剪或替代 |
 
@@ -48,7 +60,7 @@
 ## 项目范围与部署目标
 
 - **不关注桌面端操作**：不主打 macOS/Windows 桌面 UI 自动化、本地应用控制等；这些能力不在本项目主路径。
-- **侧重命令行与接口**：主要交互方式为 **CLI**（如 `openclaw agent -m "..."`、子命令与管道）以及 **HTTP/WebSocket 接口**（Gateway API、未来可能的 REST/Webhook），便于被脚本、流水线、其他服务调用。
+- **侧重命令行与接口**：主要交互方式为 **CLI**（如 `openocta agent -m "..."`、子命令与管道）以及 **HTTP/WebSocket 接口**（Gateway API、未来可能的 REST/Webhook），便于被脚本、流水线、其他服务调用。
 - **部署目标**：**面向无桌面环境的企业服务器**——如 Linux 服务器、容器、K8s 内 Pod、跳板机或内网 API 服务，以 headless 方式运行 Gateway 与 Agent，通过 CLI 与 API 对外提供服务。
 
 ---
@@ -79,99 +91,91 @@
 ```
 OctopusClaw/
 ├── src/                    # Go 后端（Gateway、Agent、Channels、Cron 等）
-│   ├── cmd/openclaw/       # CLI 入口与子命令
+│   ├── cmd/openocta/       # CLI 入口与子命令
+│   ├── embed/              # 嵌入资源（前端、config-schema、openocta.json.example）
+│   │   └── frontend/       # 前端构建产物（由 build 生成）
 │   ├── pkg/                # 核心模块
 │   └── README.md           # 后端详细说明
 ├── ui/                     # Control UI 前端（Lit + Vite，WebSocket 控制面）
 │   └── README.md           # 前端详细说明
-├── dist/control-ui/        # 前端构建产物（可由 Gateway 托管）
+├── deploy/                 # 部署相关（Dockerfile、systemd 服务）
 └── docs/                   # 文档与迁移计划
 ```
 
 - **后端**：Go 1.24+，提供 Gateway HTTP + WebSocket、Agent、Channels、Cron、Config 等能力。
-- **前端**：Control UI，通过 WebSocket 连接 Gateway，管理会话、配置、通道、Cron、Skills、Nodes 等。
+- **前端**：Control UI 通过 **go:embed** 嵌入单一二进制，生产环境无需单独部署前端。
+- **单一二进制**：构建后的 `openocta` 已包含前端与配置模板，可直接分发运行。
 
 ## 要求
 
 - **Go 1.24+**（后端）
-- **Node ≥18**（前端开发，可选；生产可仅使用已构建的 `dist/control-ui`）
+- **Node ≥18**（仅构建时需要，用于编译前端；生产环境无需 Node）
 - 环境变量 **`ANTHROPIC_API_KEY`**（仅在使用 `agent` 命令时需要）
 
 ## 快速开始
 
-### 一键快速启动（推荐）
-
-```bash
-# 一键构建并启动前后端（Gateway 18789 + 前端开发服务器 5173）
-make run-all
-```
-
-首次运行会构建后端与前端，然后同时启动 Gateway 与前端开发服务器。访问 `http://localhost:5173` 使用 Control UI。
-
-### 1. 构建与运行后端
+### 1. 构建
 
 ```bash
 # 使用 Makefile（推荐）
-make run
+make build
 
-# 或手动构建
-cd src
-go build -o openclaw ./cmd/openclaw
-./openclaw gateway run
+# 或使用 build.sh
+./build.sh build
+# build.sh 支持: ui | embed | go | build | clean | snapshot | release | docker
 ```
 
-Gateway 启动后，默认在 `http://127.0.0.1:18789` 提供 HTTP 与 WebSocket。若已将 Control UI 构建产物放到 `dist/control-ui`，则可通过同一端口访问 Control UI。
+构建顺序：前端 → 复制 embed 资源 → Go 编译。生成单一二进制 `openocta`，已包含前端与配置模板。
 
-### 2. 前端目录与启动方式
-
-Gateway 托管前端时，会按以下顺序查找 `dist/control-ui` 目录：
-
-| 优先级 | 路径 |
-|--------|------|
-| 1 | 环境变量 `OPENOCTA_FRONTEND_DIR` 指定的目录（若未以 `control-ui` 结尾则自动追加） |
-| 2 | 当前工作目录下的 `./dist/control-ui` |
-| 3 | 当前工作目录上一层的 `../dist/control-ui` |
-
-若所有路径均不存在，Gateway 会在首次访问根路径时返回 500 错误，提示已尝试的路径。
-
-**两种前端启动方式：**
-
-- **方式 A：Gateway 托管** — 先 `make build-frontend` 构建前端，再 `make run` 启动 Gateway，通过 `http://127.0.0.1:18789` 访问。
-- **方式 B：前端开发服务器** — `make run-ui` 启动 Vite 开发服务器（端口 5173），支持热更新，需另行启动 Gateway。
-
-### 3. 开发 / 运行前端（可选）
+### 2. 运行 Gateway
 
 ```bash
-# 进入前端目录
-cd ui
-
-# 安装依赖（pnpm 推荐）
-pnpm install
-
-# 开发模式（默认 http://localhost:5173，可配置连接后端 Gateway）
-pnpm dev
-
-# 构建（输出到 dist/control-ui）
-pnpm build
+# 构建后直接运行
+make run
+# 或
+./openocta gateway run
 ```
 
-前端开发服务器可配置 Gateway WebSocket URL，与本地或远程 Gateway 联调。
+Gateway 启动后，默认在 `http://127.0.0.1:18789` 提供 HTTP 与 WebSocket。**前端已嵌入二进制**，访问同一端口即可使用 Control UI。
+
+### 3. 开发模式（前端热更新）
+
+```bash
+# 终端 1：启动 Gateway（需先 make build）
+./openocta gateway run
+
+# 终端 2：启动前端开发服务器（端口 5173）
+make run-ui
+```
+
+访问 `http://localhost:5173` 使用 Control UI 开发服务器，支持热更新。
 
 ### 4. 运行 Agent（需 ANTHROPIC_API_KEY）
 
 ```bash
-cd src
 export ANTHROPIC_API_KEY=your-key
-go run ./cmd/openclaw agent -m "Hello, echo test"
+./openocta agent -m "Hello, echo test"
 ```
+
+### 5. 配置文件
+
+首次运行且配置文件不存在时，会自动从嵌入的 `openocta.json.example` 初始化并写入配置目录：
+
+| 平台 | 默认配置目录 |
+|------|--------------|
+| Linux / macOS | `~/.openocta/openocta.json` |
+| Windows | `%APPDATA%\openocta\openocta.json` |
 
 ## 主要命令
 
 | 命令 | 说明 |
 |------|------|
-| `make run-all` | 一键启动前后端（构建 + Gateway + 前端开发服务器） |
-| `make run` | 构建后端并启动 Gateway（端口 18789） |
+| `make build` | 完整构建（前端 + embed + Go） |
+| `make run` | 构建并启动 Gateway（端口 18789） |
 | `make run-ui` | 仅启动前端开发服务器（端口 5173） |
+| `make snapshot` | GoReleaser 快照构建（tar.gz/zip/deb/rpm/docker） |
+| `make release` | GoReleaser 正式发布 |
+| `make docker` | 本地 Docker 镜像构建 |
 | `gateway run` | 启动 Gateway HTTP + WebSocket 服务（默认端口 18789） |
 | `agent -m <msg>` | 本地执行 Agent（agentsdk-go + DefaultTools） |
 | `node` | Node 控制（占位） |
@@ -180,12 +184,12 @@ go run ./cmd/openclaw agent -m "Hello, echo test"
 
 | 变量 | 说明 |
 |------|------|
-| `OPENOCTA_FRONTEND_DIR` | 前端构建产物目录（Gateway 托管时查找 `dist/control-ui` 的基准路径，可选） |
-| `OPENCLAW_STATE_DIR` | 状态目录（默认 `~/.openclaw`） |
-| `OPENCLAW_CONFIG_PATH` | 配置文件路径 |
-| `OPENCLAW_SKIP_CHANNELS` | 设为 `1` 跳过 channel 加载 |
-| `OPENCLAW_SKIP_CRON` | 设为 `1` 跳过 Cron 服务 |
-| `OPENCLAW_SKIP_PROVIDERS` | 同 `SKIP_CHANNELS` 的兼容别名 |
+| `OPENOCTA_STATE_DIR` | 状态目录（Linux/macOS 默认 `~/.openocta`，Windows 默认 `%APPDATA%\openocta`） |
+| `OPENOCTA_CONFIG_PATH` | 配置文件路径 |
+| `OPENOCTA_FRONTEND_DIR` | 前端目录（可选，默认使用嵌入的前端） |
+| `OPENOCTA_SKIP_CHANNELS` | 设为 `1` 跳过 channel 加载 |
+| `OPENOCTA_SKIP_CRON` | 设为 `1` 跳过 Cron 服务 |
+| `OPENOCTA_SKIP_PROVIDERS` | 同 `SKIP_CHANNELS` 的兼容别名 |
 | `ANTHROPIC_API_KEY` | Agent 模型认证（`agent` 命令必填） |
 
 ## 子项目说明
@@ -195,6 +199,31 @@ go run ./cmd/openclaw agent -m "Hello, echo test"
 | **Go 后端** | [src/](src/) | Gateway、Agent、Channels、Cron、Config 等，详见 [src/README.md](src/README.md) |
 | **Control UI** | [ui/](ui/) | Lit + Vite 单页应用，WebSocket 连接 Gateway，详见 [ui/README.md](ui/README.md) |
 
+## 打包与发布
+
+使用 [GoReleaser](https://goreleaser.com/) 生成多平台安装包：
+
+```bash
+# 快照构建（不发布，输出到 dist/）
+make snapshot
+# 或
+goreleaser release --snapshot --clean --skip=publish
+
+# 正式发布（需配置 GITLAB_TOKEN 等）
+make release
+```
+
+**产出物：**
+
+| 平台 | 格式 | 说明 |
+|------|------|------|
+| Linux amd64/arm64 | tar.gz, deb, rpm | 单一二进制，前端已嵌入 |
+| macOS amd64/arm64 | tar.gz | 单一二进制 |
+| Windows amd64/arm64 | zip | 单一二进制 |
+| Docker | linux/amd64 | 精简镜像，单一二进制 |
+
+**配置路径：** Linux/macOS 使用 `~/.openocta`，Windows 使用 `%APPDATA%\openocta`。首次运行自动从嵌入的 `openocta.json.example` 初始化配置。
+
 ## 测试
 
 ```bash
@@ -202,14 +231,14 @@ go run ./cmd/openclaw agent -m "Hello, echo test"
 cd src && go test ./...
 
 # 前端测试
-cd ui && pnpm test
+cd ui && npm run test
 ```
 
 后端协议兼容性测试位于 `src/test/gateway_protocol_test.go`，覆盖 connect/hello-ok、health 及 frame 序列化。
 
 ## 文档与参考
 
-- [OpenClaw 官方](https://github.com/openclaw/openclaw) — 上游项目
+- [OpenClaw 官方](https://github.com/openocta/openocta) — 上游项目
 - [docs.openclaw.ai](https://docs.openclaw.ai) — 官方文档
 - [Gateway 协议](https://docs.openclaw.ai/gateway) — WebSocket 握手与 req/res 格式
 - [src/README.md](src/README.md) — 后端模块、迁移状态与文档链接
@@ -225,4 +254,4 @@ cd ui && pnpm test
 - [src/docs/skills.md](src/docs/skills.md) — Skills 使用说明：Skill 的加载优先级（extraDirs/bundled/managed/workspace）、在会话中的匹配规则，以及如何编写/部署个人 `SKILL.md`。
 - [src/docs/tools.md](src/docs/tools.md) — 工具系统总览：内置通用工具、OpenClaw 扩展工具以及自定义工具的整体结构与关系，并指向各子文档。
 - [src/docs/tools-builtin.md](src/docs/tools-builtin.md) — agentsdk-go 内置工具说明：bash、文件读写/编辑、grep/glob、webfetch/websearch、任务与异步执行、askuserquestion 等的能力与典型场景。
-- [src/docs/tools-openclaw.md](src/docs/tools-openclaw.md) — OpenClaw 扩展工具说明：`echo`、`cron`、`gateway_config`、`sessions` 等工具如何通过 GatewayInvoker 调用网关能力，并给出自定义工具实现与注册示例。
+- [src/docs/tools-openocta.md](src/docs/tools-openocta.md) — OpenOcta 扩展工具说明：`echo`、`cron`、`gateway_config`、`sessions` 等工具如何通过 GatewayInvoker 调用网关能力，并给出自定义工具实现与注册示例。

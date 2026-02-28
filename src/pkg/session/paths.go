@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/openclaw/openclaw/pkg/paths"
+	"github.com/openocta/openocta/pkg/paths"
 )
 
 const (

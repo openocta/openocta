@@ -650,6 +650,12 @@
   gap: 10px;
 }
 
+.cfg-input-wrap--textarea .cfg-textarea--json {
+  flex: 1;
+  min-width: 0;
+  min-height: 120px;
+}
+
 .cfg-input {
   flex: 1;
   padding: 11px 14px;

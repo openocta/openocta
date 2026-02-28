@@ -1,6 +1,6 @@
 # Skills 使用说明
 
-OctopusClaw 的 Skills 系统基于 [`agentsdk-go` 的 Skills 抽象](https://docs.openclaw.ai/zh-CN/tools/skills) 扩展而来，用于为大模型会话注入领域知识、工具和工作流能力。Skills 通常以 `SKILL.md` 文件形式存在，支持从多个位置加载与合并。
+OctopusClaw 的 Skills 系统基于 [`agentsdk-go` 的 Skills 抽象](https://docs.openocta.ai/zh-CN/tools/skills) 扩展而来，用于为大模型会话注入领域知识、工具和工作流能力。Skills 通常以 `SKILL.md` 文件形式存在，支持从多个位置加载与合并。
 
 本文主要说明：
 
@@ -19,8 +19,8 @@ Skill 加载入口：`LoadWorkspaceEntries`（`pkg/agent/skills/loader.go`），
 Skills 会从多个位置按优先级加载并合并（后加载覆盖前加载）：
 
 1. **额外目录**：`config.skills.load.extraDirs` 中配置的路径（**最低优先级**）
-2. **内置 Skills**：安装包自带的 `skills` 目录（`OPENCLAW_BUNDLED_SKILLS_DIR` 或可执行文件旁的 `skills/`）（低优先级）
-3. **托管 Skills**：`~/.openclaw/skills`（中等优先级）
+2. **内置 Skills**：安装包自带的 `skills` 目录（`OPENOCTA_BUNDLED_SKILLS_DIR` 或可执行文件旁的 `skills/`）（低优先级）
+3. **托管 Skills**：`~/.openocta/skills`（中等优先级）
 4. **工作区 Skills**：`<workspace>/skills`（最高优先级，通常是项目自身的 Skills）
 
 同名 Skill（以 `Entry.Name` 为准）会遵循以下覆盖规则：
@@ -75,7 +75,7 @@ skills/
 
 3. 构造 `Entry`：
    - `Name`：最终 Skill 名称
-   - `Source`：来源标记，如 `openclaw-workspace`、`openclaw-managed` 等
+   - `Source`：来源标记，如 `openocta-workspace`、`openocta-managed` 等
    - `FilePath`：`SKILL.md` 的绝对路径
    - `BaseDir`：Skill 所在目录
    - `Metadata`：从 frontmatter 解析出的元数据（当前实现为基础结构，预留扩展）
@@ -99,7 +99,7 @@ apiOpts.Skills = regs
 这意味着：
 
 - 大模型在运行时可以“看到”这些技能的描述与说明；
-- Runtime 会根据用户输入、上下文、Skill 的元数据等决定是否激活某个 Skill（匹配逻辑在 agentsdk-go 内部，遵循 [`skills` 文档](https://docs.openclaw.ai/zh-CN/tools/skills) 中的通用规则）。
+- Runtime 会根据用户输入、上下文、Skill 的元数据等决定是否激活某个 Skill（匹配逻辑在 agentsdk-go 内部，遵循 [`skills` 文档](https://docs.openocta.ai/zh-CN/tools/skills) 中的通用规则）。
 
 ### 2.2 Skill 匹配规则（概念层面）
 
@@ -132,7 +132,7 @@ apiOpts.Skills = regs
 你可以通过两种方式新增个人 Skill：
 
 1. 在项目工作区（推荐）：`<project-root>/skills/...`
-2. 在全局托管目录：`~/.openclaw/skills/...`
+2. 在全局托管目录：`~/.openocta/skills/...`
 
 只要目录结构满足前述规则，Runtime 启动时就会自动发现并注册。
 
@@ -177,7 +177,7 @@ homepage: "https://internal-wiki/sre"
 只要该目录位于：
 
 - `<project-root>/skills/my-sre/`，或
-- `~/.openclaw/skills/my-sre/`
+- `~/.openocta/skills/my-sre/`
 
 Runtime 启动时就会将其视为名为 `"MySRE"` 的 Skill，并在会话中按匹配规则使用。
 
@@ -237,5 +237,5 @@ emoji: "🗄️"
 - **按领域拆分目录**：一个领域一个 Skill 目录，便于维护与替换。
 - **充分利用 frontmatter**：为 Skill 提供清晰的名称、emoji、homepage，以及未来可能扩展的元数据（OS/Requires 等）。
 - **本地开发优先使用 workspace Skills**：将项目专用 Skill 放在 `<project-root>/skills` 下，避免影响全局环境。
-- **团队共享通过 extraDirs/managedSkills**：将公共 Skill 放到 `~/.openclaw/skills` 或配置的 `extraDirs`，在多个项目间复用。
+- **团队共享通过 extraDirs/managedSkills**：将公共 Skill 放到 `~/.openocta/skills` 或配置的 `extraDirs`，在多个项目间复用。
 

@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/openclaw/openclaw/pkg/session"
+	"github.com/openocta/openocta/pkg/session"
 )
 
 // SyncSessionFiles scans the session transcripts dir for the agent and upserts into files/chunks/FTS.

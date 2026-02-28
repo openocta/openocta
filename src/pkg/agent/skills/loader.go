@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/openclaw/openclaw/pkg/config"
-	"github.com/openclaw/openclaw/pkg/paths"
+	"github.com/openocta/openocta/pkg/config"
+	"github.com/openocta/openocta/pkg/paths"
 )
 
 // Entry represents a loaded skill entry.
@@ -56,7 +56,7 @@ type InstallSpec struct {
 
 // LoadOptions configures skill loading.
 type LoadOptions struct {
-	Config           *config.OpenClawConfig
+	Config           *config.OpenOctaConfig
 	ManagedSkillsDir string
 	BundledSkillsDir string
 }
@@ -278,7 +278,7 @@ func parseFrontmatter(content string) map[string]string {
 	return result
 }
 
-// parseMetadata parses OpenClaw metadata from frontmatter.
+// parseMetadata parses OpenOcta metadata from frontmatter.
 func parseMetadata(frontmatter map[string]string) *Metadata {
 	// TODO: Parse JSON5 metadata field
 	// For now, return basic metadata

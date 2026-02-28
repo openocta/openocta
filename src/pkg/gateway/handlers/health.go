@@ -3,7 +3,7 @@ package handlers
 import (
 	"time"
 
-	"github.com/openclaw/openclaw/pkg/gateway/protocol"
+	"github.com/openocta/openocta/pkg/gateway/protocol"
 )
 
 // HealthSnapshot is a minimal health payload (compatible with protocol).

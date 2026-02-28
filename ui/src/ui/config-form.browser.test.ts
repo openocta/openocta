@@ -243,7 +243,7 @@ describe("config form renderer", () => {
     expect(analysis.unsupportedPaths).not.toContain("channels");
   });
 
-  it("flags additionalProperties true", () => {
+  it("supports empty object with additionalProperties true as JSON", () => {
     const schema = {
       type: "object",
       properties: {
@@ -254,6 +254,21 @@ describe("config form renderer", () => {
       },
     };
     const analysis = analyzeConfigSchema(schema);
-    expect(analysis.unsupportedPaths).toContain("extra");
+    expect(analysis.unsupportedPaths).not.toContain("extra");
+  });
+
+  it("flags object with both properties and additionalProperties true", () => {
+    const schema = {
+      type: "object",
+      properties: {
+        mixed: {
+          type: "object",
+          properties: { foo: { type: "string" } },
+          additionalProperties: true,
+        },
+      },
+    };
+    const analysis = analyzeConfigSchema(schema);
+    expect(analysis.unsupportedPaths).toContain("mixed");
   });
 });

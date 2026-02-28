@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/openclaw/openclaw/pkg/config"
+	"github.com/openocta/openocta/pkg/config"
 )
 
 // EligibilityContext provides context for skill eligibility checking.
@@ -24,7 +24,7 @@ type RemoteEligibility struct {
 }
 
 // ShouldInclude checks if a skill entry should be included based on config and eligibility.
-func ShouldInclude(entry Entry, cfg *config.OpenClawConfig, eligibility *EligibilityContext) bool {
+func ShouldInclude(entry Entry, cfg *config.OpenOctaConfig, eligibility *EligibilityContext) bool {
 	skillKey := resolveSkillKey(entry)
 	skillConfig := resolveSkillConfig(cfg, skillKey)
 	allowBundled := resolveBundledAllowlist(cfg)
@@ -143,7 +143,7 @@ func resolveSkillKey(entry Entry) string {
 }
 
 // resolveSkillConfig resolves skill configuration from config.
-func resolveSkillConfig(cfg *config.OpenClawConfig, skillKey string) *config.SkillConfig {
+func resolveSkillConfig(cfg *config.OpenOctaConfig, skillKey string) *config.SkillConfig {
 	if cfg == nil || cfg.Skills == nil || cfg.Skills.Entries == nil {
 		return nil
 	}
@@ -155,7 +155,7 @@ func resolveSkillConfig(cfg *config.OpenClawConfig, skillKey string) *config.Ski
 }
 
 // resolveBundledAllowlist resolves the bundled skills allowlist.
-func resolveBundledAllowlist(cfg *config.OpenClawConfig) []string {
+func resolveBundledAllowlist(cfg *config.OpenOctaConfig) []string {
 	if cfg == nil || cfg.Skills == nil || len(cfg.Skills.AllowBundled) == 0 {
 		return nil
 	}
@@ -193,7 +193,7 @@ func hasBinary(bin string) bool {
 }
 
 // isConfigPathTruthy checks if a config path value is truthy.
-func isConfigPathTruthy(cfg *config.OpenClawConfig, pathStr string) bool {
+func isConfigPathTruthy(cfg *config.OpenOctaConfig, pathStr string) bool {
 	// Simplified implementation
 	// TODO: Full config path resolution
 	defaultValues := map[string]bool{
@@ -207,7 +207,7 @@ func isConfigPathTruthy(cfg *config.OpenClawConfig, pathStr string) bool {
 }
 
 // FilterEntries filters skill entries based on config and eligibility.
-func FilterEntries(entries []Entry, cfg *config.OpenClawConfig, eligibility *EligibilityContext) []Entry {
+func FilterEntries(entries []Entry, cfg *config.OpenOctaConfig, eligibility *EligibilityContext) []Entry {
 	var filtered []Entry
 	for _, entry := range entries {
 		if ShouldInclude(entry, cfg, eligibility) {

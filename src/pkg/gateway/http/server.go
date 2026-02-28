@@ -3,8 +3,11 @@
 package http
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
+	"io/fs"
 	"log"
 	"log/slog"
 	"net/http"
@@ -17,18 +20,26 @@ import (
 
 	"github.com/cexll/agentsdk-go/pkg/middleware"
 	"github.com/cexll/agentsdk-go/pkg/tool"
-	"github.com/openclaw/openclaw/pkg/acp/mcp"
-	"github.com/openclaw/openclaw/pkg/channels"
-	"github.com/openclaw/openclaw/pkg/channels/builtin"
-	"github.com/openclaw/openclaw/pkg/channels/dingtalk"
-	"github.com/openclaw/openclaw/pkg/channels/feishu"
-	"github.com/openclaw/openclaw/pkg/config"
-	"github.com/openclaw/openclaw/pkg/cron"
-	"github.com/openclaw/openclaw/pkg/gateway/handlers"
-	"github.com/openclaw/openclaw/pkg/gateway/protocol"
-	"github.com/openclaw/openclaw/pkg/gateway/ws"
-	"github.com/openclaw/openclaw/pkg/outbound"
-	"github.com/openclaw/openclaw/pkg/paths"
+	"github.com/google/uuid"
+	"github.com/openocta/openocta/embed"
+	"github.com/openocta/openocta/pkg/acp/mcp"
+	"github.com/openocta/openocta/pkg/channels"
+	"github.com/openocta/openocta/pkg/channels/builtin"
+	"github.com/openocta/openocta/pkg/channels/dingtalk"
+	"github.com/openocta/openocta/pkg/channels/discord"
+	"github.com/openocta/openocta/pkg/channels/feishu"
+	"github.com/openocta/openocta/pkg/channels/qq"
+	"github.com/openocta/openocta/pkg/channels/slack"
+	"github.com/openocta/openocta/pkg/channels/telegram"
+	"github.com/openocta/openocta/pkg/channels/wework"
+	"github.com/openocta/openocta/pkg/channels/whatsapp"
+	"github.com/openocta/openocta/pkg/config"
+	"github.com/openocta/openocta/pkg/cron"
+	"github.com/openocta/openocta/pkg/gateway/handlers"
+	"github.com/openocta/openocta/pkg/gateway/protocol"
+	"github.com/openocta/openocta/pkg/gateway/ws"
+	"github.com/openocta/openocta/pkg/outbound"
+	"github.com/openocta/openocta/pkg/paths"
 )
 
 // Server is the Gateway HTTP server.
@@ -43,6 +54,7 @@ type Server struct {
 	distOnce   sync.Once
 	distDir    string
 	distErr    error
+	distFS     fs.FS // embedded frontend when used
 }
 
 // isTruthyEnv returns true if the env var is set to a truthy value (1, true, yes).
@@ -56,8 +68,8 @@ func NewServer(addr string, version string) *Server {
 	mux := http.NewServeMux()
 	env := func(k string) string { return os.Getenv(k) }
 	stateDir := paths.ResolveStateDir(env)
-	skipCron := isTruthyEnv(env, "OPENCLAW_SKIP_CRON")
-	skipChannels := isTruthyEnv(env, "OPENCLAW_SKIP_CHANNELS") || isTruthyEnv(env, "OPENCLAW_SKIP_PROVIDERS")
+	skipCron := isTruthyEnv(env, "OPENOCTA_SKIP_CRON")
+	skipChannels := isTruthyEnv(env, "OPENOCTA_SKIP_CHANNELS") || isTruthyEnv(env, "OPENOCTA_SKIP_PROVIDERS")
 
 	var cronSvc *cron.Service
 	if !skipCron {
@@ -73,26 +85,14 @@ func NewServer(addr string, version string) *Server {
 		cronSvcIf = cronSvc
 	}
 	chReg := channels.NewRegistry()
+	chRuntimeMgr := channels.NewManager()
 	outReg := outbound.NewAdapterRegistry()
 	if !skipChannels {
+		// 注册所有内置 Channel 插件，同时为每个通道注册一个 StubAdapter。
+		// 出站发送统一走 RuntimeChannel 机制，OutboundAdapter 仅作为占位/未来扩展保留。
 		builtin.Register(chReg)
-		loadConfig := func() (*config.OpenClawConfig, error) {
-			snap, err := handlers.LoadConfigSnapshot(env)
-			if err != nil || snap == nil {
-				return nil, err
-			}
-			return snap.Config, nil
-		}
-		// Register stub outbound adapters for each channel; override with real adapters when configured
 		for _, p := range chReg.List() {
-			var adapter outbound.OutboundAdapter = &outbound.StubAdapter{ChannelID: p.ID()}
-			switch p.ID() {
-			case "dingtalk":
-				adapter = dingtalk.NewAdapter(loadConfig)
-			case "feishu":
-				adapter = feishu.NewAdapter(loadConfig)
-			}
-			outReg.Register(p.ID(), adapter)
+			outReg.Register(p.ID(), &outbound.StubAdapter{ChannelID: p.ID()})
 		}
 	}
 	hub := ws.NewHub(version, nil, nil) // Create hub first to get broadcast functions
@@ -101,7 +101,7 @@ func NewServer(addr string, version string) *Server {
 	cfg, err := config.Load(env)
 	if err != nil {
 		// Log error but continue with default config
-		cfg = &config.OpenClawConfig{}
+		cfg = &config.OpenOctaConfig{}
 	}
 
 	// Apply environment variables from config.env.vars
@@ -135,6 +135,7 @@ func NewServer(addr string, version string) *Server {
 		GetCronStorePath:    func() string { return filepath.Join(stateDir, "cron", "jobs.json") },
 		AgentRunSeq:         make(map[string]int64), // Initialize sequence counter
 		Config:              cfg,                    // Store loaded config
+		ChannelManager:      chRuntimeMgr,
 		Broadcast: func(event string, payload interface{}, opts *handlers.BroadcastOptions) {
 			if opts == nil {
 				opts = &handlers.BroadcastOptions{
@@ -188,10 +189,68 @@ func NewServer(addr string, version string) *Server {
 		return resultOk, resultPayload, resultErr
 	}
 	hub.SetHandlers(&reg)
+
+	// HooksWake / HooksAgent: 参考 openclaw createGatewayHooksRequestHandler
+	// EnqueueSystemEvent 向主会话广播 system-event；RequestHeartbeatNow 暂为 no-op
+	mainKey := handlers.ResolveMainSessionKey(cfg)
+	enqueueSystemEvent := func(text string) {
+		hub.Broadcast("system-event", map[string]interface{}{"text": text, "sessionKey": mainKey}, nil)
+	}
+	requestHeartbeatNow := func(reason string) {} // no-op: OctopusClaw 无独立心跳循环
+
+	ctx.HooksWake = func(text string, mode string) {
+		enqueueSystemEvent(text)
+		if mode == "now" {
+			requestHeartbeatNow("hook:wake")
+		}
+	}
+
+	ctx.HooksAgent = func(p handlers.HooksAgentParams) string {
+		runID := uuid.New().String()
+		sessionKey := strings.TrimSpace(p.SessionKey)
+		if sessionKey == "" {
+			sessionKey = fmt.Sprintf("hook:%s", runID)
+		}
+		// 与 alert hook 保持一致：sessions.reset + chat.send
+		resetParams := map[string]interface{}{"key": sessionKey}
+		if ok, _, _ := ctx.InvokeMethod("sessions.reset", resetParams); !ok {
+			return runID // 仍返回 runID 便于追踪
+		}
+		chatParams := map[string]interface{}{
+			"message":        p.Message,
+			"sessionKey":     sessionKey,
+			"idempotencyKey": runID,
+		}
+		if p.Thinking != "" {
+			chatParams["thinking"] = p.Thinking
+		}
+		if p.TimeoutSeconds != nil && *p.TimeoutSeconds > 0 {
+			chatParams["timeoutMs"] = *p.TimeoutSeconds * 1000
+		}
+		if p.Channel != "" {
+			chatParams["channel"] = p.Channel
+		}
+		if p.To != "" {
+			chatParams["to"] = p.To
+		}
+		if p.ChatType != "" {
+			chatParams["chatType"] = p.ChatType
+		}
+		ok, payload, _ := ctx.InvokeMethod("chat.send", chatParams)
+		if ok {
+			if m, ok := payload.(map[string]interface{}); ok {
+				if rid, ok := m["runId"].(string); ok && rid != "" {
+					runID = rid
+				}
+			}
+		}
+		return runID
+	}
+
 	if cronSvc != nil {
 		cronSvc.SetDeps(&cron.Deps{
-			EnqueueSystemEvent:  func(text string) {}, // no-op for now
-			RequestHeartbeatNow: func(reason string) {},
+			EnqueueSystemEvent:  enqueueSystemEvent,
+			RequestHeartbeatNow: requestHeartbeatNow,
 			RunIsolatedAgentJob: func(job cron.CronJob, message string) {
 				agentID := job.AgentID
 				if agentID == "" {
@@ -203,6 +262,19 @@ func NewServer(addr string, version string) *Server {
 		cronSvc.Start()
 	}
 	go hub.Run()
+
+	// 构建入站消息下沉器，将 RuntimeChannel 的 InboundMessage 转换为 hooks.agent 调用。
+	inboundSink := &hooksAgentSink{ctx: ctx}
+
+	// 基于配置初始化各通道 Runtime（由统一注册逻辑处理）。
+	registerChannelRuntimesFromConfig(chRuntimeMgr, cfg, inboundSink, skipChannels)
+
+	// 异步启动所有 RuntimeChannel。
+	go func() {
+		if err := chRuntimeMgr.Start(context.Background()); err != nil {
+			slog.Warn("channels runtime: start error", "error", err)
+		}
+	}()
 
 	s := &Server{
 		addr:       addr,
@@ -257,10 +329,9 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("POST /hooks", s.handleHooks)
 }
 
-// resolveDistDir resolves the frontend dist directory from multiple candidates.
-// Order: 1) OPENOCTA_FRONTEND_DIR env; 2) cwd/dist/control-ui; 3) parent(cwd)/dist/control-ui.
-// Returns the first path that exists and contains index.html; otherwise an error listing all tried paths.
-func resolveDistDir() (string, error) {
+// resolveDistDirFile resolves the frontend dist directory from the file system.
+// Order: 1) OPENOCTA_FRONTEND_DIR env; 2) cwd/dist/control-ui; 3) cwd/embed/frontend; 4) parent(cwd)/dist/control-ui.
+func resolveDistDirFile() (string, error) {
 	var candidates []string
 	if env := strings.TrimSpace(os.Getenv("OPENOCTA_FRONTEND_DIR")); env != "" {
 		p := filepath.Clean(env)
@@ -271,6 +342,8 @@ func resolveDistDir() (string, error) {
 	}
 	cwd, _ := os.Getwd()
 	candidates = append(candidates, filepath.Join(cwd, "dist", "control-ui"))
+	candidates = append(candidates, filepath.Join(cwd, "embed", "frontend"))
+	candidates = append(candidates, filepath.Join(cwd, "src", "embed", "frontend"))
 	candidates = append(candidates, filepath.Join(filepath.Dir(cwd), "dist", "control-ui"))
 
 	for _, dir := range candidates {
@@ -292,18 +365,31 @@ func (s *Server) handleDist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.distOnce.Do(func() {
-		s.distDir, s.distErr = resolveDistDir()
+		if efs, err := embed.FrontendFS(); err == nil {
+			if _, err := fs.Stat(efs, "index.html"); err == nil {
+				s.distFS = efs
+				return
+			}
+		}
+		s.distDir, s.distErr = resolveDistDirFile()
 	})
 	if s.distErr != nil {
 		http.Error(w, s.distErr.Error(), http.StatusInternalServerError)
 		return
 	}
-	distDir := s.distDir
-	indexPath := filepath.Join(distDir, "index.html")
-
 	// Serve index.html for root or SPA fallback (no FileServer to avoid 301 redirects)
 	serveIndex := func() {
-		f, err := os.Open(indexPath)
+		var f fs.File
+		var err error
+		if s.distFS != nil {
+			f, err = s.distFS.Open("index.html")
+		} else {
+			var of *os.File
+			of, err = os.Open(filepath.Join(s.distDir, "index.html"))
+			if of != nil {
+				f = of
+			}
+		}
 		if err != nil {
 			http.NotFound(w, r)
 			return
@@ -315,7 +401,14 @@ func (s *Server) handleDist(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		http.ServeContent(w, r, "index.html", info.ModTime(), f)
+		var rs io.ReadSeeker
+		if rsf, ok := f.(io.ReadSeeker); ok {
+			rs = rsf
+		} else {
+			data, _ := io.ReadAll(f)
+			rs = bytes.NewReader(data)
+		}
+		http.ServeContent(w, r, "index.html", info.ModTime(), rs)
 	}
 
 	cleanPath := path.Clean("/" + strings.TrimSpace(r.URL.Path))
@@ -324,15 +417,24 @@ func (s *Server) handleDist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Static file: resolve under distDir (no .. escape)
+	// Static file: resolve under distDir or distFS (no .. escape)
 	name := strings.TrimPrefix(cleanPath, "/")
-	name = filepath.Clean(name)
-	if name == "" || strings.HasPrefix(name, "..") {
+	name = filepath.ToSlash(filepath.Clean(name))
+	if name == "" || strings.Contains(name, "..") {
 		http.NotFound(w, r)
 		return
 	}
-	fullPath := filepath.Join(distDir, name)
-	f, err := os.Open(fullPath)
+	var f fs.File
+	var err error
+	if s.distFS != nil {
+		f, err = s.distFS.Open(name)
+	} else {
+		var of *os.File
+		of, err = os.Open(filepath.Join(s.distDir, name))
+		if of != nil {
+			f = of
+		}
+	}
 	if err != nil {
 		accept := strings.ToLower(r.Header.Get("Accept"))
 		if strings.Contains(accept, "text/html") || strings.Contains(accept, "*/*") {
@@ -352,7 +454,14 @@ func (s *Server) handleDist(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	http.ServeContent(w, r, info.Name(), info.ModTime(), f)
+	var rs io.ReadSeeker
+	if rsf, ok := f.(io.ReadSeeker); ok {
+		rs = rsf
+	} else {
+		data, _ := io.ReadAll(f)
+		rs = bytes.NewReader(data)
+	}
+	http.ServeContent(w, r, info.Name(), info.ModTime(), rs)
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
@@ -371,6 +480,48 @@ func (s *Server) handleNotImplemented(w http.ResponseWriter, _ *http.Request) {
 
 func (s *Server) handleWSUpgrade(w http.ResponseWriter, r *http.Request) {
 	s.hub.ServeWS(w, r)
+}
+
+// registerChannelRuntimesFromConfig 根据配置初始化并注册各通道 Runtime。
+// 若某个通道配置不合法，会记录日志并继续处理其它通道。
+func registerChannelRuntimesFromConfig(
+	mgr *channels.Manager,
+	cfg *config.OpenOctaConfig,
+	sink channels.InboundSink,
+	skipChannels bool,
+) {
+	if skipChannels || cfg == nil || cfg.Channels == nil {
+		return
+	}
+
+	// 约定：所有通道的 NewRuntimeFromConfig 签名均为 RuntimeFactoryFunc。
+	factories := map[string]channels.RuntimeFactoryFunc{
+		"feishu":   feishu.NewRuntimeFromConfig,
+		"qq":       qq.NewRuntimeFromConfig,
+		"wework":   wework.NewRuntimeFromConfig,
+		"dingtalk": dingtalk.NewRuntimeFromConfig,
+		"telegram": telegram.NewRuntimeFromConfig,
+		"slack":    slack.NewRuntimeFromConfig,
+		"whatsapp": whatsapp.NewRuntimeFromConfig,
+		"discord":  discord.NewRuntimeFromConfig,
+	}
+
+	for id, factory := range factories {
+		raw := cfg.Channels.GetChannelConfig(id)
+		if raw == nil {
+			continue
+		}
+
+		rt, err := factory(raw, sink)
+		if err != nil {
+			slog.Warn("channel runtime: failed to init from config", "channel", id, "error", err)
+			continue
+		}
+
+		if err := mgr.Register(rt); err != nil {
+			slog.Warn("channel runtime: failed to register", "channel", id, "error", err)
+		}
+	}
 }
 
 // ListenAndServe starts the HTTP server.

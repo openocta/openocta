@@ -9,13 +9,13 @@ import (
 	"testing"
 
 	"github.com/gorilla/websocket"
-	gatewayhttp "github.com/openclaw/openclaw/pkg/gateway/http"
-	"github.com/openclaw/openclaw/pkg/gateway/protocol"
+	gatewayhttp "github.com/openocta/openocta/pkg/gateway/http"
+	"github.com/openocta/openocta/pkg/gateway/protocol"
 )
 
 func TestGatewayProtocol_ConnectHelloOk(t *testing.T) {
-	t.Setenv("OPENCLAW_SKIP_CHANNELS", "1")
-	t.Setenv("OPENCLAW_SKIP_CRON", "1")
+	t.Setenv("OPENOCTA_SKIP_CHANNELS", "1")
+	t.Setenv("OPENOCTA_SKIP_CRON", "1")
 
 	srv := gatewayhttp.NewServer(":0", "test-0.0.0")
 	ts := httptest.NewServer(srv.Handler())
@@ -70,8 +70,8 @@ func TestGatewayProtocol_ConnectHelloOk(t *testing.T) {
 }
 
 func TestGatewayProtocol_HealthRequest(t *testing.T) {
-	t.Setenv("OPENCLAW_SKIP_CHANNELS", "1")
-	t.Setenv("OPENCLAW_SKIP_CRON", "1")
+	t.Setenv("OPENOCTA_SKIP_CHANNELS", "1")
+	t.Setenv("OPENOCTA_SKIP_CRON", "1")
 
 	srv := gatewayhttp.NewServer(":0", "test-0.0.0")
 	ts := httptest.NewServer(srv.Handler())
@@ -133,8 +133,8 @@ func TestGatewayProtocol_HealthRequest(t *testing.T) {
 }
 
 func TestGatewayHTTP_Health(t *testing.T) {
-	t.Setenv("OPENCLAW_SKIP_CHANNELS", "1")
-	t.Setenv("OPENCLAW_SKIP_CRON", "1")
+	t.Setenv("OPENOCTA_SKIP_CHANNELS", "1")
+	t.Setenv("OPENOCTA_SKIP_CRON", "1")
 
 	srv := gatewayhttp.NewServer(":0", "test-0.0.0")
 	ts := httptest.NewServer(srv.Handler())
@@ -151,8 +151,8 @@ func TestGatewayHTTP_Health(t *testing.T) {
 }
 
 func TestGatewayHTTP_HealthAPIPath(t *testing.T) {
-	t.Setenv("OPENCLAW_SKIP_CHANNELS", "1")
-	t.Setenv("OPENCLAW_SKIP_CRON", "1")
+	t.Setenv("OPENOCTA_SKIP_CHANNELS", "1")
+	t.Setenv("OPENOCTA_SKIP_CRON", "1")
 
 	srv := gatewayhttp.NewServer(":0", "test-0.0.0")
 	ts := httptest.NewServer(srv.Handler())
@@ -237,8 +237,8 @@ func TestGatewayProtocol_ResponseFrame(t *testing.T) {
 }
 
 func TestGatewayProtocol_AgentInvalidParams(t *testing.T) {
-	t.Setenv("OPENCLAW_SKIP_CHANNELS", "1")
-	t.Setenv("OPENCLAW_SKIP_CRON", "1")
+	t.Setenv("OPENOCTA_SKIP_CHANNELS", "1")
+	t.Setenv("OPENOCTA_SKIP_CRON", "1")
 
 	srv := gatewayhttp.NewServer(":0", "test-0.0.0")
 	ts := httptest.NewServer(srv.Handler())

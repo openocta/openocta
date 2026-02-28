@@ -2,7 +2,7 @@
 package dingtalk
 
 import (
-	"github.com/openclaw/openclaw/pkg/channels"
+	"github.com/openocta/openocta/pkg/channels"
 )
 
 const channelID = "dingtalk"

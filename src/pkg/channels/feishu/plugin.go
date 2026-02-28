@@ -2,15 +2,26 @@
 package feishu
 
 import (
-	"github.com/openclaw/openclaw/pkg/channels"
+	"github.com/openocta/openocta/pkg/channels"
 )
 
 const channelID = "feishu"
 
-// Plugin is the Feishu channel plugin.
-var Plugin = &channels.BasePlugin{
-	Id:       channelID,
-	MetaData: meta,
+// feishuGatewayPlugin extends BasePlugin with LogoutAccount for channels.logout.
+type feishuGatewayPlugin struct {
+	*channels.BasePlugin
+}
+
+func (p *feishuGatewayPlugin) LogoutAccount(ctx *channels.LogoutContext) (*channels.LogoutResult, error) {
+	return &channels.LogoutResult{Cleared: true, LoggedOut: true}, nil
+}
+
+// Plugin is the Feishu channel plugin (supports channels.logout).
+var Plugin = &feishuGatewayPlugin{
+	BasePlugin: &channels.BasePlugin{
+		Id:       channelID,
+		MetaData: meta,
+	},
 }
 
 var meta = channels.ChannelMeta{

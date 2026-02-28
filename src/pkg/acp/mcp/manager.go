@@ -10,7 +10,7 @@ import (
 
 	"github.com/cexll/agentsdk-go/pkg/tool"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/openclaw/openclaw/pkg/config"
+	"github.com/openocta/openocta/pkg/config"
 )
 
 // Manager holds MCP server connections and exposes aggregated tools for the agent.
@@ -22,7 +22,7 @@ type Manager struct {
 
 // NewManager creates a manager and connects to all enabled MCP servers from cfg.
 // If cfg or cfg.Mcp is nil, returns an empty manager (no tools).
-func NewManager(ctx context.Context, cfg *config.OpenClawConfig) (*Manager, error) {
+func NewManager(ctx context.Context, cfg *config.OpenOctaConfig) (*Manager, error) {
 	m := &Manager{}
 	if cfg == nil || cfg.Mcp == nil || len(cfg.Mcp.Servers) == 0 {
 		return m, nil

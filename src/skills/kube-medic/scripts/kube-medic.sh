@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # kube-medic.sh — Kubernetes Cluster Triage & Diagnostics
-# Part of the kube-medic skill for OpenClaw / Anvil AI
+# Part of the kube-medic skill for OpenOcta / Anvil AI
 # All operations are READ-ONLY unless --confirm-write is passed.
 #
 # Usage: kube-medic.sh <subcommand> [options]

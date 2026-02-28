@@ -1,12 +1,12 @@
 # MCP 配置使用说明
 
-本文档说明如何在 OpenClaw 中配置 MCP（Model Context Protocol）服务，以便 Agent 通过标准协议调用外部工具（如 Prometheus、Elasticsearch 等）。
+本文档说明如何在 OpenOcta 中配置 MCP（Model Context Protocol）服务，以便 Agent 通过标准协议调用外部工具（如 Prometheus、Elasticsearch 等）。
 
 ## 概述
 
 MCP 配置位于主配置的 `mcp.servers` 下，每个条目对应一个 MCP 服务器连接。系统会将启用的条目转换为 Agent 可用的 MCP 规格（stdio 命令或 URL），并支持按需禁用、去重。
 
-**配置路径**：与主配置相同（默认 `~/.openclaw/openclaw.json`），在根对象下使用 `mcp` 字段。
+**配置路径**：与主配置相同（默认 `~/.openocta/openocta.json`），在根对象下使用 `mcp` 字段。
 
 ## 配置结构
 

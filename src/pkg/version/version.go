@@ -1,10 +1,14 @@
 package version
 
-import "os"
+import (
+	"os"
 
-// Version is the OpenClaw version. Can be overridden via OPENCLAW_BUNDLED_VERSION.
+	_ "github.com/openocta/openocta/embed" // ensure embedded .env is loaded before Version is set
+)
+
+// Version is the OpenOcta version. Can be overridden via OPENOCTA_BUNDLED_VERSION (from embedded .env or env).
 var Version = func() string {
-	if v := os.Getenv("OPENCLAW_BUNDLED_VERSION"); v != "" {
+	if v := os.Getenv("OPENOCTA_BUNDLED_VERSION"); v != "" {
 		return v
 	}
 	return "0.0.1-dev"

@@ -99,7 +99,7 @@ apiOpts.Middleware = []middleware.Middleware{
 ```go
 //apiOpts.OTEL = api.OTELConfig{
 //	Enabled:     true,
-//	ServiceName: "openclaw",
+//	ServiceName: "openocta",
 //	Endpoint:    "http://192.168.50.254:14318",
 //}
 ```

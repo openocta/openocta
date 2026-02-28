@@ -4,12 +4,12 @@ package skills
 import (
 	"os"
 
-	"github.com/openclaw/openclaw/pkg/config"
+	"github.com/openocta/openocta/pkg/config"
 )
 
 // ApplyEnvOverrides applies skill environment variable overrides.
 // Returns a function to restore original environment.
-func ApplyEnvOverrides(entries []Entry, cfg *config.OpenClawConfig) func() {
+func ApplyEnvOverrides(entries []Entry, cfg *config.OpenOctaConfig) func() {
 	restore := make(map[string]string)
 
 	for _, entry := range entries {

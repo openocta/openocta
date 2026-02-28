@@ -1,4 +1,4 @@
-// Package runtime: system prompt building from ~/.openclaw/workspace and ./prompt markdown (deduped by basename).
+// Package runtime: system prompt building from ~/.openocta/workspace and ./prompt markdown (deduped by basename).
 package runtime
 
 import (
@@ -64,7 +64,7 @@ func loadPromptMarkdownFiles(workspaceDir, promptDir string) ([]PromptFile, erro
 
 // SystemPromptOptions configures BuildSystemPrompt.
 type SystemPromptOptions struct {
-	// WorkspaceDir is the default prompt dir (e.g. ~/.openclaw/workspace).
+	// WorkspaceDir is the default prompt dir (e.g. ~/.openocta/workspace).
 	WorkspaceDir string
 	// ProjectRoot is the project root; prompt dir is ProjectRoot/prompt.
 	ProjectRoot string

@@ -10,36 +10,40 @@ import (
 	"strings"
 
 	lark "github.com/larksuite/oapi-sdk-go/v3"
+	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
 	larkim "github.com/larksuite/oapi-sdk-go/v3/service/im/v1"
-	"github.com/openclaw/openclaw/pkg/config"
-	"github.com/openclaw/openclaw/pkg/outbound"
+	"github.com/openocta/openocta/pkg/config"
+	"github.com/openocta/openocta/pkg/outbound"
 )
 
 // Adapter sends messages via Feishu IM API.
 type Adapter struct {
-	loadConfig func() (*config.OpenClawConfig, error)
+	loadConfig func() (*config.OpenOctaConfig, error)
 }
 
 // NewAdapter creates a Feishu outbound adapter.
-func NewAdapter(loadConfig func() (*config.OpenClawConfig, error)) *Adapter {
+func NewAdapter(loadConfig func() (*config.OpenOctaConfig, error)) *Adapter {
 	return &Adapter{loadConfig: loadConfig}
 }
 
-func (a *Adapter) getCreds() (appId, appSecret string, err error) {
+func (a *Adapter) getCreds() (appId, appSecret, domain string, err error) {
 	cfg, err := a.loadConfig()
 	if err != nil || cfg == nil || cfg.Channels == nil || cfg.Channels.Feishu == nil {
-		return "", "", fmt.Errorf("feishu not configured")
+		return "", "", "", fmt.Errorf("feishu not configured")
 	}
 	m := extractFeishuCreds(cfg.Channels.Feishu)
 	if m == nil {
-		return "", "", fmt.Errorf("feishu credentials not found")
+		return "", "", "", fmt.Errorf("feishu credentials not found")
 	}
 	appId, _ = m["appId"].(string)
 	appSecret, _ = m["appSecret"].(string)
-	if appId == "" || appSecret == "" {
-		return "", "", fmt.Errorf("feishu appId and appSecret required")
+	if d, ok := m["domain"].(string); ok {
+		domain = strings.TrimSpace(d)
 	}
-	return appId, appSecret, nil
+	if appId == "" || appSecret == "" {
+		return "", "", "", fmt.Errorf("feishu appId and appSecret required")
+	}
+	return appId, appSecret, domain, nil
 }
 
 func extractFeishuCreds(f map[string]interface{}) map[string]interface{} {
@@ -60,6 +64,17 @@ func extractFeishuCreds(f map[string]interface{}) map[string]interface{} {
 		}
 	}
 	return nil
+}
+
+// resolveDomain returns Feishu or Lark base URL depending on config.
+func resolveDomain(domain string) string {
+	switch strings.ToLower(strings.TrimSpace(domain)) {
+	case "lark":
+		return lark.LarkBaseUrl
+	default:
+		// 默认走 Feishu 国内站
+		return lark.FeishuBaseUrl
+	}
 }
 
 // resolveReceiveIdType infers open_id, user_id, or chat_id from the target string.
@@ -101,7 +116,7 @@ func buildPostContent(text string) string {
 
 // SendText sends a text message to the given receive_id (open_id, user_id, or chat_id).
 func (a *Adapter) SendText(ctx context.Context, c *outbound.OutboundContext) (*outbound.DeliveryResult, error) {
-	appId, appSecret, err := a.getCreds()
+	appId, appSecret, domain, err := a.getCreds()
 	if err != nil {
 		return nil, err
 	}
@@ -114,15 +129,35 @@ func (a *Adapter) SendText(ctx context.Context, c *outbound.OutboundContext) (*o
 		receiveIdType = "chat_id"
 	}
 
-	client := lark.NewClient(appId, appSecret)
-	content := buildPostContent(c.Text)
+	client := lark.NewClient(
+		appId,
+		appSecret,
+		lark.WithAppType(larkcore.AppTypeSelfBuilt),
+		lark.WithOpenBaseUrl(resolveDomain(domain)),
+	)
+
+	// 使用交互式卡片以获得更好的 Markdown 渲染效果（兼容 openclaw/goclaw 行为）
+	cardContent := fmt.Sprintf(`{
+		"schema": "2.0",
+		"config": {
+			"wide_screen_mode": true
+		},
+		"body": {
+			"elements": [
+				{
+					"tag": "markdown",
+					"content": %s
+				}
+			]
+		}
+	}`, jsonEscape(c.Text))
 
 	req := larkim.NewCreateMessageReqBuilder().
 		ReceiveIdType(receiveIdType).
 		Body(larkim.NewCreateMessageReqBodyBuilder().
 			ReceiveId(to).
-			MsgType("post").
-			Content(content).
+			MsgType(larkim.MsgTypeInteractive).
+			Content(cardContent).
 			Build()).
 		Build()
 
@@ -146,6 +181,12 @@ func (a *Adapter) SendText(ctx context.Context, c *outbound.OutboundContext) (*o
 		MessageID: msgId,
 		ChatID:    to,
 	}, nil
+}
+
+// jsonEscape marshals a string into JSON string literal form.
+func jsonEscape(s string) string {
+	b, _ := json.Marshal(s)
+	return string(b)
 }
 
 // SendMedia sends media - Feishu supports image/file via different APIs; fallback to text with URL.

@@ -14,8 +14,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/openclaw/openclaw/pkg/config"
-	"github.com/openclaw/openclaw/pkg/outbound"
+	"github.com/openocta/openocta/pkg/config"
+	"github.com/openocta/openocta/pkg/outbound"
 )
 
 const (
@@ -25,14 +25,14 @@ const (
 
 // Adapter sends messages via DingTalk robot batchSend API.
 type Adapter struct {
-	loadConfig func() (*config.OpenClawConfig, error)
+	loadConfig func() (*config.OpenOctaConfig, error)
 	tokenMu    sync.Mutex
 	token      string
 	tokenExp   time.Time
 }
 
 // NewAdapter creates a DingTalk outbound adapter.
-func NewAdapter(loadConfig func() (*config.OpenClawConfig, error)) *Adapter {
+func NewAdapter(loadConfig func() (*config.OpenOctaConfig, error)) *Adapter {
 	return &Adapter{loadConfig: loadConfig}
 }
 

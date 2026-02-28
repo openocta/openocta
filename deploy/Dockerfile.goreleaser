@@ -1,0 +1,16 @@
+# GoReleaser 用精简镜像：单一二进制（前端+配置已嵌入）
+# 构建上下文仅包含 openocta 二进制
+
+FROM alpine:3.20
+RUN apk add --no-cache ca-certificates tzdata
+
+# 二进制（已包含前端与 openocta.json.example）
+COPY openocta /usr/local/bin/openocta
+
+# 首次启动时 config.Load 会将嵌入的 openocta.json.example 写入 ~/.openocta/
+ENV OPENOCTA_STATE_DIR=/root/.openocta
+
+EXPOSE 18789
+
+ENTRYPOINT ["openocta"]
+CMD ["gateway", "run", "--port", "18789"]

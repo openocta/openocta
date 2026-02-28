@@ -16,7 +16,7 @@ ExecStart=/usr/bin/openocta gateway run --port 18789
 Restart=on-failure
 RestartSec=5
 # 状态目录（可按需覆盖）
-Environment=OPENCLAW_STATE_DIR=/var/lib/openocta
+Environment=OPENOCTA_STATE_DIR=/var/lib/openocta
 # 建议以专用用户运行（按需取消注释并创建用户）
 # User=openocta
 # Group=openocta

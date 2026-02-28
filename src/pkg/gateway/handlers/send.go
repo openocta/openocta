@@ -4,8 +4,9 @@ import (
 	"context"
 	"strings"
 
-	"github.com/openclaw/openclaw/pkg/gateway/protocol"
-	"github.com/openclaw/openclaw/pkg/outbound"
+	"github.com/openocta/openocta/pkg/channels"
+	"github.com/openocta/openocta/pkg/gateway/protocol"
+	"github.com/openocta/openocta/pkg/outbound"
 )
 
 // DefaultChatChannel is the default channel for send (matches TS).
@@ -44,10 +45,57 @@ func SendHandler(opts HandlerOpts) error {
 	}
 
 	hctx := opts.Context
-	if hctx == nil || hctx.OutboundRegistry == nil {
+	if hctx == nil {
 		opts.Respond(false, nil, &protocol.ErrorShape{
 			Code:    "method_not_implemented",
-			Message: "send requires outbound registry",
+			Message: "send requires handler context",
+		}, nil)
+		return nil
+	}
+
+	// 优先走 RuntimeChannel 机制：根据 channelName 查找对应 Runtime 并发送。
+	lowerChannel := strings.ToLower(channel)
+	if hctx.ChannelManager != nil {
+		if rt, ok := hctx.ChannelManager.Get(lowerChannel); ok && rt != nil {
+			rtMsg := &channels.RuntimeOutboundMessage{
+				Channel:   lowerChannel,
+				AccountID: accountId,
+				ChatID:    to,
+				Content:   message,
+				Metadata:  map[string]interface{}{},
+			}
+			if mediaUrl != "" {
+				rtMsg.Media = []channels.RuntimeMedia{
+					{
+						Type: "image",
+						URL:  mediaUrl,
+					},
+				}
+			}
+
+			if err := rt.Send(rtMsg); err != nil {
+				opts.Respond(false, nil, &protocol.ErrorShape{
+					Code:    protocol.ErrCodeServiceUnavailable,
+					Message: err.Error(),
+				}, nil)
+				return nil
+			}
+
+			payload := map[string]interface{}{
+				"channel":   lowerChannel,
+				"messageId": "",
+				"chatId":    to,
+			}
+			opts.Respond(true, payload, nil, nil)
+			return nil
+		}
+	}
+
+	// 兼容路径：若未找到对应 Runtime，则退回到 OutboundAdapterRegistry（主要用于尚未实现 Runtime 的通道）。
+	if hctx.OutboundRegistry == nil {
+		opts.Respond(false, nil, &protocol.ErrorShape{
+			Code:    "method_not_implemented",
+			Message: "send requires runtime channel or outbound registry",
 		}, nil)
 		return nil
 	}
@@ -63,9 +111,9 @@ func SendHandler(opts HandlerOpts) error {
 	var result *outbound.DeliveryResult
 	var err error
 	if mediaUrl != "" {
-		result, err = hctx.OutboundRegistry.DeliverMedia(reqCtx, channel, oc)
+		result, err = hctx.OutboundRegistry.DeliverMedia(reqCtx, lowerChannel, oc)
 	} else {
-		result, err = hctx.OutboundRegistry.DeliverText(reqCtx, channel, oc)
+		result, err = hctx.OutboundRegistry.DeliverText(reqCtx, lowerChannel, oc)
 	}
 	if err != nil {
 		opts.Respond(false, nil, &protocol.ErrorShape{

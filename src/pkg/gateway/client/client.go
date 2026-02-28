@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
-	"github.com/openclaw/openclaw/pkg/gateway/protocol"
+	"github.com/openocta/openocta/pkg/gateway/protocol"
 )
 
 // Client connects to Gateway via WebSocket and sends req/res.
@@ -69,7 +69,7 @@ func (c *Client) Connect(ctx context.Context) error {
 			MinProtocol: 3,
 			MaxProtocol: 3,
 			Client: protocol.ConnectClientInfo{
-				ID:       "openclaw-cli",
+				ID:       "openocta-cli",
 				Version:  "0.0.0",
 				Platform: "cli",
 				Mode:     "cli",

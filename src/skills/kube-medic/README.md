@@ -1,6 +1,6 @@
 # 🏥 kube-medic
 
-**Kubernetes Cluster Triage & Diagnostics for OpenClaw**
+**Kubernetes Cluster Triage & Diagnostics for OpenOcta**
 
 Your cluster is on fire at 3am. Instead of juggling `kubectl` commands, just ask:
 
@@ -106,9 +106,9 @@ Agent: Let me run a full cluster sweep.
 - **🛡️ Write Allowlist:** Only safe write commands are permitted: `rollout undo`, `rollout restart`, `scale`, `delete pod`, `cordon`, `uncordon`. No `kubectl exec`. Ever.
 - **📦 Structured JSON Output:** All responses are structured JSON that the LLM can parse and present as clean Markdown tables and timelines.
 
-## OpenClaw Discord v2 Ready
+## OpenOcta Discord v2 Ready
 
-Compatible with OpenClaw Discord channel behavior documented for v2026.2.14+:
+Compatible with OpenOcta Discord channel behavior documented for v2026.2.14+:
 - Compact first triage response (top issues first), with details on demand
 - Component-style quick actions when available (`Run Full Sweep`, `Pod Autopsy`, `Show Recent Warning Events`)
 - Numbered-list fallback when components are unavailable

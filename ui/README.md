@@ -93,7 +93,7 @@ UI 通过 Tab 分组组织，与 Gateway 的 config、sessions、channels、cron
 
 ## 文档与参考
 
-- [OpenClaw 官方](https://github.com/openclaw/openclaw) — 上游项目
+- [OpenClaw 官方](https://github.com/openocta/openocta) — 上游项目
 - [docs.openclaw.ai](https://docs.openclaw.ai) — 官方文档
 - [Gateway 协议](https://docs.openclaw.ai/gateway) — WebSocket 握手与 req/res 格式
 - [项目根 README](../README.md) — 整体项目结构与后端说明

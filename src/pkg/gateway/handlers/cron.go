@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/openclaw/openclaw/pkg/cron"
-	"github.com/openclaw/openclaw/pkg/gateway/protocol"
+	"github.com/openocta/openocta/pkg/cron"
+	"github.com/openocta/openocta/pkg/gateway/protocol"
 )
 
 // getJobID returns id or jobId from params (id takes precedence). Used by cron.update/remove/run/runs.

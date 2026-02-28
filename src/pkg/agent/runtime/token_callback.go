@@ -7,12 +7,12 @@ import (
 	"time"
 
 	"github.com/cexll/agentsdk-go/pkg/api"
-	"github.com/openclaw/openclaw/pkg/logging"
-	"github.com/openclaw/openclaw/pkg/session"
+	"github.com/openocta/openocta/pkg/logging"
+	"github.com/openocta/openocta/pkg/session"
 )
 
 // NewTokenCallbackForSession returns an api.TokenCallback that appends a token_usage JSON line
-// to the session transcript file at ~/.openclaw/agents/<agentID>/sessions/<sessionID>.jsonl.
+// to the session transcript file at ~/.openocta/agents/<agentID>/sessions/<sessionID>.jsonl.
 // Path is resolved per stats.SessionID using agentID and env. The callback is lightweight and
 // appends one line per invocation; use from the SDK's token tracker (non-blocking recommended).
 func NewTokenCallbackForSession(agentID string, env func(string) string) api.TokenCallback {

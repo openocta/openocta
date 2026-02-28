@@ -1,6 +1,7 @@
 package cron
 
 import (
+	"os"
 	"path/filepath"
 	"sync"
 	"time"
@@ -27,7 +28,14 @@ func (s *Service) SetDeps(deps *Deps) {
 // NewService creates a new cron service.
 func NewService(storePath string) (*Service, error) {
 	if storePath == "" {
-		storePath = filepath.Join(".openclaw", "cron", "jobs.json")
+		storePath = filepath.Join(".openocta", "cron", "jobs.json")
+	}
+	// 确保存储路径所在目录存在，不存在则创建
+	dir := filepath.Dir(storePath)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return nil, err
+		}
 	}
 	store, err := LoadStore(storePath)
 	if err != nil {
