@@ -12,7 +12,7 @@ const (
 	newStateDirname      = ".openocta"
 	newStateDirnameWin   = "openocta"
 	configFilename       = "openocta.json"
-	defaultGatewayPort   = 18789
+	defaultGatewayPort   = 18900
 	legacyStateDirname   = ".clawdbot"
 	legacyConfigClawdbot = "clawdbot.json"
 )

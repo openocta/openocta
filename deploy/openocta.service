@@ -12,7 +12,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/openocta gateway run --port 18789
+ExecStart=/usr/bin/openocta gateway run --port 18900
 Restart=on-failure
 RestartSec=5
 # 状态目录（可按需覆盖）

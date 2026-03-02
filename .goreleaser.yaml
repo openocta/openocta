@@ -42,7 +42,7 @@ archives:
     format: tar.gz
     files:
       - none*
-      - src: src/docs/**/*
+      - src: src/docs/*
         dst: docs
 
   # 独立说明文档压缩包，输出到 dist 目录
@@ -52,7 +52,7 @@ archives:
     format: tar.gz
     wrap_in_directory: true
     files:
-      - src: src/docs/**/*
+      - src: src/docs/*
         dst: docs
 
 nfpms:
@@ -72,16 +72,16 @@ nfpms:
       postinstall: deploy/scripts/postinstall.sh
       postremove: deploy/scripts/postremove.sh
 
-dockers:
-  - id: openocta
-    goos: linux
-    goarch: amd64
-    ids:
-      - openocta
-    image_templates:
-      - "openocta/openocta:{{ .Tag }}"
-      - "openocta/openocta:latest"
-    dockerfile: deploy/Dockerfile.goreleaser
+#dockers:
+#  - id: openocta
+#    goos: linux
+#    goarch: amd64
+#    ids:
+#      - openocta
+#    image_templates:
+#      - "openocta/openocta:{{ .Tag }}"
+#      - "openocta/openocta:latest"
+#    dockerfile: deploy/Dockerfile.goreleaser
 
 release:
   gitlab:

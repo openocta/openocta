@@ -34,7 +34,7 @@ release:
 docker:
 	docker build -f deploy/Dockerfile -t openocta:local .
 
-# 开发：构建并启动 Gateway（端口 18789）
+# 开发：构建并启动 Gateway（端口 18900）
 run: build
 	./openocta gateway run
 

@@ -37,16 +37,23 @@ do_clean() {
 do_snapshot() {
   echo "==> GoReleaser 快照构建..."
   goreleaser release --snapshot --clean --skip=publish
+  do_after
 }
 
 do_release() {
   echo "==> GoReleaser 正式发布..."
   goreleaser release --clean
+  do_after
 }
 
 do_docker() {
   echo "==> Docker 构建..."
   docker build -f deploy/Dockerfile -t openocta:local .
+}
+
+do_after() {
+  cp deploy/dist-README.md dist/
+  echo "==> 构建完成"
 }
 
 case "${1:-build}" in

@@ -44,7 +44,7 @@ COPY --from=go-builder /openocta /usr/local/bin/openocta
 
 ENV OPENOCTA_STATE_DIR=/root/.openocta
 
-EXPOSE 18789
+EXPOSE 18900
 
 ENTRYPOINT ["openocta"]
-CMD ["gateway", "run", "--port", "18789"]
+CMD ["gateway", "run", "--port", "18900"]

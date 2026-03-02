@@ -80,7 +80,7 @@ func EnsureDefaultConfig(env EnvGetter) error {
 	modeLocal := "local"
 	bindLoopback := "loopback"
 	modeOff := "off"
-	port := 18789
+	port := 18900
 	resetOnExit := false
 	cfg := &OpenOctaConfig{
 		Meta: &ConfigMeta{

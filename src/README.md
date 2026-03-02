@@ -19,7 +19,7 @@ go build -o openocta ./cmd/openocta
 # 显示帮助
 go run ./cmd/openocta --help
 
-# 启动 Gateway（默认端口 18789）
+# 启动 Gateway（默认端口 18900）
 go run ./cmd/openocta gateway run
 
 # 运行 Agent（需 ANTHROPIC_API_KEY）

@@ -136,7 +136,7 @@ make run
 ./openocta gateway run
 ```
 
-Gateway 启动后，默认在 `http://127.0.0.1:18789` 提供 HTTP 与 WebSocket。**前端已嵌入二进制**，访问同一端口即可使用 Control UI。
+Gateway 启动后，默认在 `http://127.0.0.1:18900` 提供 HTTP 与 WebSocket。**前端已嵌入二进制**，访问同一端口即可使用 Control UI。
 
 ### 3. 开发模式（前端热更新）
 
@@ -171,12 +171,12 @@ export ANTHROPIC_API_KEY=your-key
 | 命令 | 说明 |
 |------|------|
 | `make build` | 完整构建（前端 + embed + Go） |
-| `make run` | 构建并启动 Gateway（端口 18789） |
+| `make run` | 构建并启动 Gateway（端口 18900） |
 | `make run-ui` | 仅启动前端开发服务器（端口 5173） |
 | `make snapshot` | GoReleaser 快照构建（tar.gz/zip/deb/rpm/docker） |
 | `make release` | GoReleaser 正式发布 |
 | `make docker` | 本地 Docker 镜像构建 |
-| `gateway run` | 启动 Gateway HTTP + WebSocket 服务（默认端口 18789） |
+| `gateway run` | 启动 Gateway HTTP + WebSocket 服务（默认端口 18900） |
 | `agent -m <msg>` | 本地执行 Agent（agentsdk-go + DefaultTools） |
 | `node` | Node 控制（占位） |
 

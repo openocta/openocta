@@ -10,7 +10,7 @@ COPY openocta /usr/local/bin/openocta
 # 首次启动时 config.Load 会将嵌入的 openocta.json.example 写入 ~/.openocta/
 ENV OPENOCTA_STATE_DIR=/root/.openocta
 
-EXPOSE 18789
+EXPOSE 18900
 
 ENTRYPOINT ["openocta"]
-CMD ["gateway", "run", "--port", "18789"]
+CMD ["gateway", "run", "--port", "18900"]

@@ -63,7 +63,7 @@ OpenOcta 的配置文件默认位于：
     }
   },
   "gateway": {
-    "port": 18789,
+    "port": 18900,
     "bind": "loopback"
   }
 }
@@ -241,7 +241,7 @@ OpenOcta 的配置文件默认位于：
 ```json
 {
   "gateway": {
-    "port": 18789,
+    "port": 18900,
     "bind": "loopback",
     "auth": {
       "mode": "token",
@@ -255,7 +255,7 @@ OpenOcta 的配置文件默认位于：
 }
 ```
 
-- `port` (integer, 可选): 监听端口（默认: 18789）
+- `port` (integer, 可选): 监听端口（默认: 18900）
 - `bind` (string, 可选): 绑定地址（`loopback`、`lan`、`auto`）
 - `auth` (object, 可选): 认证配置
   - `mode` (string, 可选): 认证模式（`token`、`password`）
@@ -575,7 +575,7 @@ OpenOcta 的配置文件默认位于：
     }
   },
   "gateway": {
-    "port": 18789,
+    "port": 18900,
     "bind": "loopback",
     "auth": {
       "mode": "token",

@@ -32,7 +32,7 @@ func TestResolveStateDirOverride(t *testing.T) {
 }
 
 func TestDefaultGatewayPort(t *testing.T) {
-	if DefaultGatewayPort() != 18789 {
-		t.Errorf("expected 18789, got %d", DefaultGatewayPort())
+	if DefaultGatewayPort() != 18900 {
+		t.Errorf("expected 18900, got %d", DefaultGatewayPort())
 	}
 }

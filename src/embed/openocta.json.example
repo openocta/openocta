@@ -83,7 +83,7 @@
     "token": "9fbe5742732ad7762201408cf22a97c559efc8106e616318"
   },
   "gateway": {
-    "port": 18789,
+    "port": 18900,
     "mode": "local",
     "bind": "loopback",
     "auth": {
