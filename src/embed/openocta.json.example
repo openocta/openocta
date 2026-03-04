@@ -1,0 +1,128 @@
+{
+  "meta": {
+    "lastTouchedVersion": "2026.2.9",
+    "lastTouchedAt": "2026-02-11T09:19:35.523Z"
+  },
+  "auth": {
+    "profiles": {
+      "qwen-portal:default": {
+        "provider": "qwen-portal",
+        "mode": "oauth"
+      }
+    }
+  },
+  "skills": {
+    "entries": {
+      "prometheus": {
+        "enabled": true
+      }
+    }
+  },
+  "plugins": {
+    "entries": {
+      "feishu": {
+        "enabled": true
+      },
+      "qwen-portal-auth": {
+        "enabled": true
+      }
+    }
+  },
+  "models": {
+    "mode": "merge",
+    "providers": {
+      "bailian": {
+        "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "apiKey": "xxxx",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "qwen3.5-plus",
+            "name": "qwen3.5-plus",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 262144,
+            "maxTokens": 65536
+          },
+          {
+                      "id": "qwen3.5-flash",
+                      "name": "qwen3.5-flash",
+                      "reasoning": false,
+                      "input": [
+                        "text"
+                      ],
+                      "cost": {
+                        "input": 0,
+                        "output": 0,
+                        "cacheRead": 0,
+                        "cacheWrite": 0
+                      },
+                      "contextWindow": 262144,
+                      "maxTokens": 65536
+                    }
+        ]
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "kimi-coding/k2p5"
+      },
+      "maxConcurrent": 4,
+      "subagents": {
+        "maxConcurrent": 8
+      }
+    }
+  },
+  "messages": {
+    "ackReactionScope": "group-mentions"
+  },
+  "commands": {
+    "native": true,
+    "nativeSkills": true,
+    "bash": true
+  },
+  "channels": {
+  },
+  "hooks": {
+    "enabled": true,
+    "path": "/hooks",
+    "token": "9fbe5742732ad7762201408cf22a97c559efc8106e616318"
+  },
+  "gateway": {
+    "port": 18900,
+    "mode": "local",
+    "bind": "loopback",
+    "auth": {
+      "mode": "token",
+      "token": "edc146993b5ae0b1544c3137cc888f94436cf11e1952cff6"
+    },
+    "tailscale": {
+      "mode": "off",
+      "resetOnExit": false
+    }
+  },
+  "env": {
+      "vars": {
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL": "kimi-k2.5",
+        "ANTHROPIC_DEFAULT_OPUS_MODEL": "kimi-k2.5",
+        "ANTHROPIC_DEFAULT_SONNET_MODEL": "kimi-k2.5",
+        "API_TIMEOUT_MS": "3000000",
+        "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+        "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+        "CLAUDE_CODE_SUBAGENT_MODEL": "kimi-k2.5",
+        "KIMI_API_KEY": "sk-kimi-omAuYzLuXO4oSY1vWdRvJcOA58BewQSHGgNerDfsdfpFpaCMr089gG9LyudGAieH",
+        "KIMI_BASE_URL": "https://api.kimi.com/coding/",
+        "KIMI_MODEL": "kimi-k2.5"
+      }
+    },
+}

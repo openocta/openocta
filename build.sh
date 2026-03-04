@@ -29,7 +29,7 @@ do_build() {
 
 do_clean() {
   echo "==> 清理..."
-  rm -rf dist src/embed/frontend src/embed/config-schema.json src/embed/openocta.json.example openocta openocta.exe
+  rm -rf dist src/embed/frontend openocta openocta.exe
   echo "==> 清理完成"
 }
 
