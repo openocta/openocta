@@ -196,7 +196,7 @@ func NewServer(addr string, version string) *Server {
 	enqueueSystemEvent := func(text string) {
 		hub.Broadcast("system-event", map[string]interface{}{"text": text, "sessionKey": mainKey}, nil)
 	}
-	requestHeartbeatNow := func(reason string) {} // no-op: OctopusClaw 无独立心跳循环
+	requestHeartbeatNow := func(reason string) {} // no-op: OpenOcta 无独立心跳循环
 
 	ctx.HooksWake = func(text string, mode string) {
 		enqueueSystemEvent(text)

@@ -123,7 +123,7 @@ Upstream references:
 ## Project layout
 
 ```text
-OctopusClaw/
+OpenOcta/
 ├── src/                    # Go backend (Gateway, Agent, Channels, Cron, etc.)
 │   ├── cmd/openocta/       # CLI entrypoints and subcommands
 │   ├── embed/              # Embedded assets (frontend, config-schema, openocta.json.example)
@@ -261,7 +261,7 @@ Upstream references:
 ## Project layout
 
 ```text
-OctopusClaw/
+OpenOcta/
 ├── src/                    # Go backend (Gateway, Agent, Channels, Cron, etc.)
 │   ├── cmd/openocta/       # CLI entrypoints and subcommands
 │   ├── embed/              # Embedded assets (frontend, config-schema, openocta.json.example)
@@ -373,7 +373,7 @@ By combining these, monitoring, logs, configuration, CMDB, tickets, and knowledg
 ## Project layout
 
 ```text
-OctopusClaw/
+OpenOcta/
 ├── src/                    # Go backend (Gateway, Agent, Channels, Cron, etc.)
 │   ├── cmd/openclaw/       # CLI entrypoints and subcommands
 │   ├── pkg/                # Core modules

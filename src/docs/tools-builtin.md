@@ -1,6 +1,6 @@
 # 内置工具说明（agentsdk-go Builtin Tools）
 
-OctopusClaw 通过 `pkg/agent/runtime/builtin_tools.go` 将 [`agentsdk-go` 的内置工具](https://github.com/stellarlinkco/agentsdk-go/tree/main/docs)注入到运行时中，为大模型提供一套开箱即用的通用能力。
+OpenOcta 通过 `pkg/agent/runtime/builtin_tools.go` 将 [`agentsdk-go` 的内置工具](https://github.com/stellarlinkco/agentsdk-go/tree/main/docs)注入到运行时中，为大模型提供一套开箱即用的通用能力。
 
 创建 Runtime 时，会调用：
 
@@ -144,7 +144,7 @@ apiOpts.Tools = tools
 - 网络访问仅限白名单地址；
 - 异步任务受资源限制（CPU/内存/磁盘等）。
 
-OctopusClaw 在创建 Runtime 时通过 `buildSandboxOptions` 传入默认的：
+OpenOcta 在创建 Runtime 时通过 `buildSandboxOptions` 传入默认的：
 
 - 根目录：`projectRoot`；
 - 允许路径：`projectRoot/workspace`、`projectRoot/shared`；

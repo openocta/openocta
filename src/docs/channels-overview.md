@@ -1,6 +1,6 @@
 # Channels 概览与架构说明
 
-OctopusClaw 通过 **Channel（通道）** 将 WhatsApp / Telegram / Feishu / DingTalk / Slack / Discord 等 IM 平台接入到同一套 Agent 能力中。本文件概述通道相关的核心概念与数据流。
+OpenOcta 通过 **Channel（通道）** 将 WhatsApp / Telegram / Feishu / DingTalk / Slack / Discord 等 IM 平台接入到同一套 Agent 能力中。本文件概述通道相关的核心概念与数据流。
 
 ## 核心概念
 

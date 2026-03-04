@@ -1,6 +1,6 @@
 # Trace 与可观测性
 
-本文档说明 OctopusClaw 中使用的 Trace 采集方式，以及预留的 OpenTelemetry 配置。实现基于 [agentsdk-go Trace 体系](https://github.com/stellarlinkco/agentsdk-go/blob/main/docs/trace-system.md)，在不同层级分别采集 HTTP 请求与 Agent 执行数据。
+本文档说明 OpenOcta 中使用的 Trace 采集方式，以及预留的 OpenTelemetry 配置。实现基于 [agentsdk-go Trace 体系](https://github.com/stellarlinkco/agentsdk-go/blob/main/docs/trace-system.md)，在不同层级分别采集 HTTP 请求与 Agent 执行数据。
 
 ## 1. 概述
 
@@ -9,7 +9,7 @@ agentsdk-go 采用双层 trace 体系：
 - **HTTP Layer Trace**：在 HTTP 服务最外层记录完整请求/响应（含 SSE 流），用于 API 集成与网络排查。
 - **Middleware Layer Trace**：在 agent/middleware 链的多个拦截点记录模型与工具调用、性能指标，用于理解 Agent 执行路径。
 
-两条链路可单独或同时启用。OctopusClaw 当前在 **Gateway HTTP Server** 使用 HTTP Trace，在 **Agent Runtime** 使用 Middleware Trace。
+两条链路可单独或同时启用。OpenOcta 当前在 **Gateway HTTP Server** 使用 HTTP Trace，在 **Agent Runtime** 使用 Middleware Trace。
 
 ---
 

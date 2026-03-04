@@ -1,6 +1,6 @@
 # 工具系统总览（Tools）
 
-OctopusClaw 的工具系统基于 [`agentsdk-go` 的 Tool 抽象](https://github.com/stellarlinkco/agentsdk-go/tree/main/docs)，并结合自身的 Gateway 与调度能力，向大模型暴露了一套统一的「可调用工具」界面。
+OpenOcta 的工具系统基于 [`agentsdk-go` 的 Tool 抽象](https://github.com/stellarlinkco/agentsdk-go/tree/main/docs)，并结合自身的 Gateway 与调度能力，向大模型暴露了一套统一的「可调用工具」界面。
 
 在运行时，工具主要分为三类：
 

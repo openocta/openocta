@@ -124,7 +124,7 @@ export ANTHROPIC_API_KEY=your-key
 ## 项目结构
 
 ```text
-OctopusClaw/
+OpenOcta/
 ├── src/                    # Go 后端（Gateway、Agent、Channels、Cron 等）
 │   ├── cmd/openocta/       # CLI 入口与子命令
 │   ├── embed/              # 嵌入资源（前端、config-schema、openocta.json.example）

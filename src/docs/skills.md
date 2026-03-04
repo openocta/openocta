@@ -1,6 +1,6 @@
 # Skills 使用说明
 
-OctopusClaw 的 Skills 系统基于 [`agentsdk-go` 的 Skills 抽象](https://docs.openocta.ai/zh-CN/tools/skills) 扩展而来，用于为大模型会话注入领域知识、工具和工作流能力。Skills 通常以 `SKILL.md` 文件形式存在，支持从多个位置加载与合并。
+OpenOcta 的 Skills 系统基于 [`agentsdk-go` 的 Skills 抽象](https://docs.openocta.ai/zh-CN/tools/skills) 扩展而来，用于为大模型会话注入领域知识、工具和工作流能力。Skills 通常以 `SKILL.md` 文件形式存在，支持从多个位置加载与合并。
 
 本文主要说明：
 
