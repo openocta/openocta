@@ -6,8 +6,7 @@
   <b>OpenOcta</b> — A Go‑based, enterprise‑oriented observability & operations agent
 </p>
 
-> 中文说明请见 `README.md`。  
-> For the Chinese version, see `README.md`.
+> English | [简体中文](README.md)
 
 OpenOcta is built on the [OpenClaw](https://github.com/openocta/openocta) Gateway protocol and Control UI, and is rewritten as a **single Go binary backend with an embedded frontend**, targeting headless enterprise servers for observability, operations, and automation scenarios.
 
@@ -115,7 +114,7 @@ On first run, if no config file exists, OpenOcta initializes one from the embedd
 
 Upstream references:
 
-- [OpenClaw repository](https://github.com/openocta/openocta)
+- [OpenClaw repository](https://github.com/openclaw/openclaw)
 - [docs.openclaw.ai](https://docs.openclaw.ai) — official Gateway & configuration docs
 
 ---
