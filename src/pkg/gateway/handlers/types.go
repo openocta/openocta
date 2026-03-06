@@ -86,6 +86,8 @@ type Context struct {
 	HooksAgent func(params HooksAgentParams) (runID string)
 	// ChannelManager holds runtime channels (IM integrations). Nil if runtime channels are disabled.
 	ChannelManager *channels.Manager
+	// ReloadChannelRuntimes reloads channel runtimes from current config (stop all, re-register, start). Nil to skip.
+	ReloadChannelRuntimes func()
 	// MarkChannelLoggedOut is called after successful logout to update in-memory state. Nil to skip.
 	MarkChannelLoggedOut func(channelId string, cleared bool, accountId string)
 }

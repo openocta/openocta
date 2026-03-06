@@ -2,6 +2,7 @@ package channels
 
 import (
 	"context"
+	"sync"
 	"time"
 )
 
@@ -105,6 +106,7 @@ type RuntimeFactoryFunc func(raw map[string]interface{}, sink InboundSink) (Runt
 
 // BaseRuntimeImpl 提供 RuntimeChannel 的通用部分实现，具体通道可组合使用。
 type BaseRuntimeImpl struct {
+	mu        sync.RWMutex
 	name      string
 	accountID string
 	config    BaseRuntimeConfig
@@ -145,19 +147,26 @@ func (b *BaseRuntimeImpl) Start(_ context.Context) error {
 	if !b.config.Enabled {
 		return nil
 	}
+	b.mu.Lock()
 	b.running = true
 	b.startedAt = time.Now()
+	b.lastError = nil
+	b.mu.Unlock()
 	return nil
 }
 
 // Stop 标记运行时停止。
 func (b *BaseRuntimeImpl) Stop() error {
+	b.mu.Lock()
 	if !b.running {
+		b.mu.Unlock()
 		return nil
 	}
-	close(b.stopChan)
 	b.running = false
 	b.stoppedAt = time.Now()
+	ch := b.stopChan
+	b.mu.Unlock()
+	close(ch)
 	return nil
 }
 
@@ -180,29 +189,59 @@ func (b *BaseRuntimeImpl) IsAllowed(senderID string) bool {
 
 // IsRunning 返回当前运行状态。
 func (b *BaseRuntimeImpl) IsRunning() bool {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
 	return b.running
 }
 
 // RuntimeStatus 实现 RuntimeStatusProvider，返回运行时的状态信息。
 func (b *BaseRuntimeImpl) RuntimeStatus() RuntimeStatus {
-	s := RuntimeStatus{Running: b.running}
-	if !b.startedAt.IsZero() {
-		ms := b.startedAt.UnixMilli()
+	b.mu.RLock()
+	running := b.running
+	startedAt := b.startedAt
+	stoppedAt := b.stoppedAt
+	lastError := b.lastError
+	b.mu.RUnlock()
+	s := RuntimeStatus{Running: running}
+	if !startedAt.IsZero() {
+		ms := startedAt.UnixMilli()
 		s.LastStartAt = &ms
 	}
-	if !b.stoppedAt.IsZero() {
-		ms := b.stoppedAt.UnixMilli()
+	if !stoppedAt.IsZero() {
+		ms := stoppedAt.UnixMilli()
 		s.LastStopAt = &ms
 	}
-	if b.lastError != nil {
-		s.LastError = b.lastError.Error()
+	if lastError != nil {
+		s.LastError = lastError.Error()
 	}
 	return s
 }
 
 // SetLastError 设置最近一次错误，供具体通道在出错时调用。
 func (b *BaseRuntimeImpl) SetLastError(err error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	b.lastError = err
+}
+
+// MarkConnectionFailed 在连接失败时调用，将 running 置为 false 并记录错误。
+// 用于 WebSocket/长连接等异步连接失败后，使 channels.status 能正确反映连接状态。
+func (b *BaseRuntimeImpl) MarkConnectionFailed(err error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.running = false
+	if err != nil {
+		b.lastError = err
+	}
+}
+
+// MarkConnectionRestored 在连接恢复后调用，将 running 置为 true 并清除错误。
+// 用于自动重连成功后更新状态。
+func (b *BaseRuntimeImpl) MarkConnectionRestored() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.running = true
+	b.lastError = nil
 }
 
 // WaitForStop 返回一个通道，用于等待停止信号。

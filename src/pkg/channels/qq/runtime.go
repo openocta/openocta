@@ -275,6 +275,7 @@ func (r *Runtime) connectWebSocket(ctx context.Context) {
 			if err := r.doConnect(ctx); err != nil {
 				r.logger.Error("QQ WebSocket connection failed, retry_after=%s, err=%v",
 					reconnectDelay, err)
+				r.BaseRuntimeImpl.MarkConnectionFailed(err)
 				time.Sleep(reconnectDelay)
 				reconnectDelay *= 2
 				if reconnectDelay > maxDelay {
@@ -282,6 +283,7 @@ func (r *Runtime) connectWebSocket(ctx context.Context) {
 				}
 			} else {
 				reconnectDelay = 1 * time.Second
+				r.BaseRuntimeImpl.MarkConnectionRestored()
 				r.waitForConnection(ctx)
 			}
 		}
@@ -460,6 +462,7 @@ func (r *Runtime) waitForConnection(ctx context.Context) {
 			r.handleMessage(message)
 		case err := <-errorChan:
 			r.logger.Warn("QQ WebSocket read error: %v", err)
+			r.BaseRuntimeImpl.MarkConnectionFailed(err)
 			return
 		}
 	}

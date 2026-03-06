@@ -271,6 +271,22 @@ func NewServer(addr string, version string) *Server {
 	// 基于配置初始化各通道 Runtime（由统一注册逻辑处理）。
 	registerChannelRuntimesFromConfig(chRuntimeMgr, cfg, inboundSink, skipChannels)
 
+	// 配置热重载：当 channels 配置变更时，停止旧连接并基于新配置重新创建。
+	ctx.ReloadChannelRuntimes = func() {
+		if chRuntimeMgr == nil {
+			return
+		}
+		cfg := ctx.Config
+		if cfg == nil {
+			return
+		}
+		chRuntimeMgr.StopAll()
+		registerChannelRuntimesFromConfig(chRuntimeMgr, cfg, inboundSink, skipChannels)
+		if err := chRuntimeMgr.Start(context.Background()); err != nil {
+			slog.Warn("channels runtime: reload start error", "error", err)
+		}
+	}
+
 	// 异步启动所有 RuntimeChannel。
 	go func() {
 		if err := chRuntimeMgr.Start(context.Background()); err != nil {

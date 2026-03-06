@@ -82,10 +82,10 @@ const CHANNEL_FORM_DEFS: Record<string, ChannelFormDef> = {
   },
   qq: {
     fields: [
+      { path: ["credentials", "appId"], label: "App ID", required: true, type: "string", placeholder: "your-app-id" },
+      { path: ["credentials", "appSecret"], label: "App Secret", required: true, type: "string", placeholder: "your-app-secret" },
       { path: ["enabled"], label: "Enabled", required: false, type: "boolean" },
-      { path: ["accountId"], label: "Account ID", required: false, type: "string", placeholder: "default" },
-      { path: ["name"], label: "Name", required: false, type: "string", placeholder: "QQ" },
-      { path: ["allowedIds"], label: "Allowed IDs", required: false, type: "string[]", placeholder: "user-id-1" },
+      { path: ["allowedIds"], label: "Allowed IDs", required: false, type: "string[]", placeholder: "user-openid-1" },
     ],
   },
 };

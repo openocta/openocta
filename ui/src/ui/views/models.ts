@@ -643,7 +643,7 @@ export function renderModels(props: ModelsProps) {
                         >?</span>
                       </div>
                       <select
-                        .value=${props.providers?.[props.selectedProvider!]?.api ?? "openai-completions"}
+                        .value=${props.providers?.[props.selectedProvider!]?.api ?? BUILTIN_PROVIDERS.find((p) => p.id === props.selectedProvider)?.defaultApi ?? "openai-completions"}
                         @change=${(e: Event) =>
                           props.onPatch(props.selectedProvider!, {
                             api: (e.target as HTMLSelectElement).value as string,

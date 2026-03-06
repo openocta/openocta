@@ -3,6 +3,7 @@ import { loadConfig } from "./controllers/config.ts";
 import { saveConfigPatch } from "./controllers/config.ts";
 import { cloneConfigObject, setPathValue } from "./controllers/config/form-utils.ts";
 import type { AddModelForm, AddProviderForm, ModelProvider } from "./views/models.ts";
+import { BUILTIN_PROVIDERS } from "./views/models-builtin.ts";
 
 export function handleModelsRefresh(host: AppViewState) {
   loadConfig(host);
@@ -189,7 +190,18 @@ export function handleModelsSave(host: AppViewState) {
   const mergedEnv = { ...existingEnv, ...conflict };
   const sanitizedProviders: Record<string, ModelProvider> = {};
   for (const [k, v] of Object.entries(providers)) {
-    sanitizedProviders[k] = sanitizeProviderForSave(v);
+    let prov = sanitizeProviderForSave(v);
+    const builtin = BUILTIN_PROVIDERS.find((p) => p.id === k);
+    if (builtin) {
+      if (!prov.baseUrl || prov.baseUrl.trim() === "") {
+        prov = { ...prov, baseUrl: builtin.baseUrl };
+      }
+      if (!prov.api || prov.api.trim() === "") {
+        const defaultApi = builtin.defaultApi ?? "openai-completions";
+        prov = { ...prov, api: defaultApi };
+      }
+    }
+    sanitizedProviders[k] = prov;
   }
   const patch: Record<string, unknown> = {
     models: { ...host.configForm?.models, providers: sanitizedProviders },

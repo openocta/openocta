@@ -94,6 +94,18 @@ func (m *Manager) Stop() error {
 	return nil
 }
 
+// StopAll 停止并移除所有已注册通道，用于配置热重载前清理。
+func (m *Manager) StopAll() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for name, ch := range m.channels {
+		if ch != nil {
+			_ = ch.Stop()
+		}
+		delete(m.channels, name)
+	}
+}
+
 // Status 返回指定通道的简要状态信息。
 func (m *Manager) Status(name string) (map[string]interface{}, error) {
 	ch, ok := m.Get(name)

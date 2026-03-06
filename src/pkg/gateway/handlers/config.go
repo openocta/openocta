@@ -316,6 +316,10 @@ func ConfigPatchHandler(opts HandlerOpts) error {
 	_ = json.Unmarshal(data, &cfg) // best-effort for response; extra keys ignored
 	if opts.Context != nil {
 		opts.Context.Config = &cfg
+		// 若 patch 包含 channels，热重载渠道运行时（停止旧连接，按新配置重新创建）
+		if _, hasChannels := patch["channels"]; hasChannels && opts.Context.ReloadChannelRuntimes != nil {
+			opts.Context.ReloadChannelRuntimes()
+		}
 	}
 	opts.Respond(true, map[string]interface{}{
 		"ok":     true,

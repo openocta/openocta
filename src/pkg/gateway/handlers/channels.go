@@ -152,6 +152,12 @@ func mergeRuntimeStatusIntoSnapshot(snap *channels.ChannelAccountSnapshot, statu
 	if snap.Enabled == nil {
 		snap.Enabled = boolPtr(true)
 	}
+	// 对于 WebSocket/长连接渠道，Running 表示已连接
+	if snap.Connected == nil && status.Running {
+		snap.Connected = boolPtr(true)
+	} else if snap.Connected == nil && !status.Running {
+		snap.Connected = boolPtr(false)
+	}
 	if status.Extra != nil {
 		if v, ok := status.Extra["appId"].(string); ok && v != "" {
 			snap.AppID = v
@@ -166,6 +172,12 @@ func mergeRuntimeStatusIntoSnapshot(snap *channels.ChannelAccountSnapshot, statu
 			snap.LastProbeAt = &v
 		} else if status.LastStartAt != nil {
 			snap.LastProbeAt = status.LastStartAt
+		}
+		if v, ok := status.Extra["lastInboundAt"].(int64); ok {
+			snap.LastInboundAt = &v
+		}
+		if v, ok := status.Extra["lastConnectedAt"].(int64); ok {
+			snap.LastConnectedAt = &v
 		}
 	} else if status.LastStartAt != nil {
 		snap.LastProbeAt = status.LastStartAt

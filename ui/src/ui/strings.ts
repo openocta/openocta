@@ -197,6 +197,7 @@ type Strings = {
   channelsNoSnapshot: string;
   channelsSchemaUnavailable: string;
   channelsConfigSchemaUnavailable: string;
+  channelsConfigSaveConfirm: string;
   channelsLoadingConfigSchema: string;
   commonSave: string;
   commonCreate: string;
@@ -1023,6 +1024,7 @@ const EN: Strings = {
   channelsNoSnapshot: "No snapshot yet.",
   channelsSchemaUnavailable: "Schema unavailable. Use Raw.",
   channelsConfigSchemaUnavailable: "Channel config schema unavailable.",
+  channelsConfigSaveConfirm: "Saving channel config will interrupt and recreate long-lived connections. Continue?",
   channelsLoadingConfigSchema: "Loading config schema…",
   commonSave: "Save",
   commonCreate: "Create",
@@ -1842,6 +1844,7 @@ const ZH: Strings = {
   channelsNoSnapshot: "暂无快照。",
   channelsSchemaUnavailable: "Schema 不可用，请使用 Raw。",
   channelsConfigSchemaUnavailable: "通道配置 Schema 不可用。",
+  channelsConfigSaveConfirm: "修改/新增渠道配置会导致长连接中断并重新创建，是否继续？",
   channelsLoadingConfigSchema: "正在加载配置 Schema…",
   commonSave: "保存",
   commonCreate: "创建",

@@ -50,6 +50,12 @@ func extractFeishuCreds(f map[string]interface{}) map[string]interface{} {
 	if f == nil {
 		return nil
 	}
+	// 支持 UI 保存的 credentials 格式: { credentials: { appId, appSecret } }
+	if creds, ok := f["credentials"].(map[string]interface{}); ok && creds != nil {
+		if _, hasAppId := creds["appId"]; hasAppId {
+			return creds
+		}
+	}
 	if _, ok := f["appId"]; ok {
 		return f
 	}

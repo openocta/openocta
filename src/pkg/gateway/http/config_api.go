@@ -180,6 +180,10 @@ func (s *Server) handleConfigPatch(w http.ResponseWriter, r *http.Request) {
 	var cfg config.OpenOctaConfig
 	_ = json.Unmarshal(data, &cfg) // best-effort for response; extra keys ignored
 	s.ctx.Config = &cfg
+	// 若 patch 包含 channels，热重载渠道运行时
+	if _, hasChannels := req.Patch["channels"]; hasChannels && s.ctx.ReloadChannelRuntimes != nil {
+		s.ctx.ReloadChannelRuntimes()
+	}
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(configPatchResponse{
 		OK:     true,

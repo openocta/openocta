@@ -75,8 +75,9 @@ func (r *Runtime) Start(ctx context.Context) error {
 
 	// 获取机器人的 open_id（用于 @ 检查）
 	if err := r.fetchBotOpenId(); err != nil {
-		// 非致命错误，记录后继续运行（只是不做 @ 检查）
 		fmt.Println(runtimeLoggerKey, "failed to fetch bot open_id:", err)
+		r.BaseRuntimeImpl.MarkConnectionFailed(err)
+		return err
 	}
 
 	// 创建事件分发器
@@ -268,6 +269,7 @@ func (r *Runtime) registerEventHandlers() {
 func (r *Runtime) startWebSocket(ctx context.Context) {
 	if err := r.wsClient.Start(ctx); err != nil {
 		fmt.Println(runtimeLoggerKey, "WebSocket error:", err)
+		r.BaseRuntimeImpl.MarkConnectionFailed(err)
 	}
 }
 
