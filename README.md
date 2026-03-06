@@ -6,8 +6,7 @@
   <b>OpenOcta 八爪鱼</b> —— 开源企业级智能体，专为运维而生
 </p>
 
-> English version: see `README.en.md`.  
-> 英文说明请查看 `README.en.md`。
+> [English](README.en.md) | 简体中文
 
 OpenOcta 基于 [OpenClaw](https://github.com/openocta/openocta) 的 Gateway 协议和 Control UI，重写为 **单一 Go 二进制后端 + 内嵌前端**，面向无桌面服务器环境下的运维、可观测与自动化场景。
 
@@ -116,7 +115,7 @@ export ANTHROPIC_API_KEY=your-key
 
 上游参考：
 
-- [OpenClaw 官方仓库](https://github.com/openocta/openocta)
+- [OpenClaw 官方仓库](https://github.com/openclaw/openclaw)
 - [docs.openclaw.ai](https://docs.openclaw.ai)（包含 Gateway 协议、配置等官方文档）
 
 ---
