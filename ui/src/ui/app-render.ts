@@ -158,6 +158,7 @@ import {
   handleModelsUseModelClick,
   handleModelsUseModelModalClose,
 } from "./app-models.ts";
+import { generateUUID } from "./uuid.ts";
 
 const AVATAR_DATA_RE = /^data:/i;
 const AVATAR_HTTP_RE = /^https?:\/\//i;
@@ -1539,7 +1540,7 @@ export function renderApp(state: AppViewState) {
                   state.digitalEmployeeCreateMcpItems = [
                     ...next,
                     {
-                      id: crypto.randomUUID(),
+                      id: generateUUID(),
                       key: "",
                       editMode: "form",
                       connectionType: "stdio",
@@ -1714,7 +1715,7 @@ export function renderApp(state: AppViewState) {
                   );
                   const sessionKey = existing
                     ? existing.key
-                    : `agent:main:employee:${idPart}:run:${crypto.randomUUID()}`;
+                    : `agent:main:employee:${idPart}:run:${generateUUID()}`;
                   state.sessionKey = sessionKey;
                   state.chatMessage = "";
                   state.chatAttachments = [];
@@ -1773,7 +1774,7 @@ export function renderApp(state: AppViewState) {
                             typeof v.serviceUrl === "string" &&
                             v.serviceUrl.trim()));
                       items.push({
-                        id: crypto.randomUUID(),
+                        id: generateUUID(),
                         key: k,
                         editMode: isForm ? "form" : "raw",
                         connectionType,
@@ -1819,7 +1820,7 @@ export function renderApp(state: AppViewState) {
                   state.digitalEmployeeEditMcpItems = [
                     ...next,
                     {
-                      id: crypto.randomUUID(),
+                      id: generateUUID(),
                       key: "",
                       editMode: "form",
                       connectionType: "stdio",
