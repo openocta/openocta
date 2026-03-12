@@ -1043,11 +1043,14 @@ func ChatSendHandler(opts HandlerOpts) error {
 			if projectRoot == "" {
 				projectRoot = "."
 			}
-			mcpServers := buildMCPForSession(sessionKey, runtimeConfig)
+			// NOTE: 我们的 MCP 配置（尤其是 entry.Env，如 PROMETHEUS_URL）目前只在 gateway 自己的
+			// acp/mcp.Manager 启动 MCP 进程时注入；而 agentsdk-go 的 MCPServers(specs) 不携带 env，
+			// 直接把 spec 交给 SDK 会导致 MCP 子进程拿不到配置 env，从而出现 prometheus "fetch failed"。
+			// 因此这里统一从 gateway Context.MCPTools 注入 MCP tools，不再依赖 agentsdk-go 的 MCPServers。
+			mcpServers := []string(nil)
 			agentTools := tools.DefaultToolsWithInvoker(invoker)
-			// Only add MCP tools from context when runtime is NOT given MCPServers, to avoid duplicate registration.
-			// When MCPServers is set, the runtime (agentsdk-go) will connect to those servers and register tools once.
-			if len(mcpServers) == 0 && ctxForBroadcast != nil && ctxForBroadcast.MCPTools != nil {
+			// Add MCP tools from gateway context (env injection + long-lived connections).
+			if ctxForBroadcast != nil && ctxForBroadcast.MCPTools != nil {
 				mcpTools, mcpErr := ctxForBroadcast.MCPTools(ctx)
 				if mcpErr != nil {
 					chatLog.Warn("mcp tools load failed, continuing without MCP sessionKey=%s error=%v", sessionKey, mcpErr)

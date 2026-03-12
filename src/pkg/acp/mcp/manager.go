@@ -3,6 +3,7 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
@@ -92,6 +93,25 @@ func resolveServiceServer(service, backendURL string) (command string, args []st
 	default:
 		return "", nil, nil
 	}
+}
+
+// normalizeLocalhostForDocker rewrites localhost URLs to host.docker.internal for dockerized MCP servers.
+// This is primarily required on macOS/Windows where containers cannot reach the host via "localhost".
+func normalizeLocalhostForDocker(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return raw
+	}
+	u, err := url.Parse(raw)
+	if err != nil || u == nil {
+		return raw
+	}
+	host := u.Hostname()
+	if host == "localhost" || host == "127.0.0.1" || host == "::1" {
+		u.Host = strings.Replace(u.Host, host, "host.docker.internal", 1)
+		return u.String()
+	}
+	return raw
 }
 
 func flattenEnv(m map[string]string) map[string]string {

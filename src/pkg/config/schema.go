@@ -704,6 +704,7 @@ type ChannelsConfig struct {
 	// Plugin channels (dingtalk, feishu, etc.) - accessed via GetChannelConfig()
 	DingTalk map[string]interface{} `json:"dingtalk,omitempty"`
 	Feishu   map[string]interface{} `json:"feishu,omitempty"`
+	QQ       map[string]interface{} `json:"qq,omitempty"`
 	// Additional plugin channels stored here (for JSON unmarshaling)
 	// Use GetChannelConfig() to access plugin channels dynamically
 	Plugins map[string]interface{} `json:"-"` // Not directly marshaled, populated from JSON
@@ -745,6 +746,7 @@ func (c *ChannelsConfig) UnmarshalJSON(data []byte) error {
 		"msteams":    true,
 		"dingtalk":   true,
 		"feishu":     true,
+		"qq":         true,
 	}
 
 	// Store unknown channel configs in Plugins map
@@ -790,6 +792,8 @@ func (c *ChannelsConfig) GetChannelConfig(name string) map[string]interface{} {
 		return c.DingTalk
 	case "feishu":
 		return c.Feishu
+	case "qq":
+		return c.QQ
 	default:
 		// Check plugins map for dynamically registered channels
 		if c.Plugins != nil {
