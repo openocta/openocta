@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/openocta-openocta-badge.png)](https://mseep.ai/app/openocta-openocta)
+
 <p align="center">
   <img src="./imgs/openocta_logo.png" alt="OpenOcta 八爪鱼" width="420">
 </p>
