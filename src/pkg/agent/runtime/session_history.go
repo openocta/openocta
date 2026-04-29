@@ -95,7 +95,19 @@ func defaultSessionHistoryLoader(projectRoot string, opts Options, cfg *config.S
 		if tErr != nil || len(tmsgs) == 0 {
 			return nil, nil
 		}
-		return transcriptMessagesToSDK(tmsgs), nil
+
+		// Truncate to last assistant message, so as to avoid duplicated current user message
+		converted := transcriptMessagesToSDK(tmsgs)
+		lastAssistant := -1
+		for i, msg := range converted {
+			if strings.EqualFold(msg.Role, "assistant") {
+				lastAssistant = i
+			}
+		}
+		if lastAssistant < 0 {
+			return nil, nil
+		}
+		return converted[:lastAssistant+1], nil
 	}
 }
 
