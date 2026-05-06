@@ -25,3 +25,5 @@ testskills/
 ClAUDE.md
 /src/test
 /tmp
+/ui/package-lock.json
+/ui/package.json

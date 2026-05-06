@@ -63,10 +63,10 @@ export function handleMcpViewModeChange(host: AppViewState, mode: "list" | "card
 export function handleMcpAddServer(host: AppViewState) {
   host.mcpAddModalOpen = true;
   host.mcpAddName = "";
-  host.mcpAddDraft = { enabled: true, command: "npx" };
+  host.mcpAddDraft = { enabled: true, command: "npx", args: ["-y", "@example/mcp-server-name"], env: { API_KEY: "your-api-key" } };
   host.mcpAddConnectionType = "stdio";
   host.mcpAddEditMode = "form";
-  host.mcpAddRawJson = JSON.stringify({ enabled: true }, null, 2);
+  host.mcpAddRawJson = JSON.stringify({ enabled: true, command: "npx", args: ["-y", "@example/mcp-server-name"], env: { API_KEY: "your-api-key" } }, null, 2);
   host.mcpAddRawError = null;
 }
 

@@ -207,7 +207,19 @@ export function renderDigitalEmployeeEditModal(props: DigitalEmployeeEditModalPr
                       props.onEditMcpJsonChange(
                         (e.target as HTMLTextAreaElement).value,
                       )}
-                    placeholder='{"prometheus":{"service":"prometheus","serviceUrl":"http://localhost:9090"}}'
+                    placeholder='{
+  "mcp-server": {
+    "enabled": true,
+    "command": "npx",
+    "args": [
+      "-y",
+      "@example/mcp-server-name"
+    ],
+    "env": {
+      "API_KEY": "your-api-key"
+    }
+  }
+}'
                   ></textarea></span>
                   <div class="list-sub muted" style="font-size: 11px; margin-top: 4px;">
                     与主配置 mcp.servers 结构一致，会话时合并（同 key 时员工覆盖）
@@ -456,7 +468,19 @@ export function renderDigitalEmployeeCreateModal(props: DigitalEmployeeCreateMod
                           .value=${props.mcpJson}
                           @input=${(e: Event) =>
                             props.onMcpJsonChange((e.target as HTMLTextAreaElement).value)}
-                          placeholder='{"prometheus":{"service":"prometheus","serviceUrl":"http://localhost:9090"}}'
+                          placeholder='{
+  "mcp-server": {
+    "enabled": true,
+    "command": "npx",
+    "args": [
+      "-y",
+      "@example/mcp-server-name"
+    ],
+    "env": {
+      "API_KEY": "your-api-key"
+    }
+  }
+}'
                         ></textarea></span>
                         <div class="list-sub muted" style="font-size: 11px; margin-top: 4px;">
                           与主配置 mcp.servers 结构一致，会话时合并（同 key 时员工覆盖）
@@ -731,7 +755,19 @@ export function renderDigitalEmployee(props: DigitalEmployeeProps) {
                                           props.onMcpJsonChange(
                                             (e.target as HTMLTextAreaElement).value,
                                           )}
-                                        placeholder='{"prometheus":{"service":"prometheus","serviceUrl":"http://localhost:9090"}}'
+                                        placeholder='{
+  "mcp-server": {
+    "enabled": true,
+    "command": "npx",
+    "args": [
+      "-y",
+      "@example/mcp-server-name"
+    ],
+    "env": {
+      "API_KEY": "your-api-key"
+    }
+  }
+}'
                                       ></textarea></span>
                                       <div class="list-sub muted" style="font-size: 11px; margin-top: 4px;">
                                         与主配置 mcp.servers 结构一致，会话时合并（同 key 时员工覆盖）
