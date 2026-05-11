@@ -53,16 +53,40 @@ func New(ctx context.Context, opts Options) (*Runtime, error) {
 		enableSandbox = false
 	}
 
-	// Built-in tools (bash, file_read, file_write, grep, glob, etc.) plus any caller-provided tools.
-	// When sandbox disabled, use NewDisabledSandbox so tools skip path/permission validation.
-	tools := BuiltinTools(projectRoot, !enableSandbox)
-	if len(opts.Tools) > 0 {
-		tools = append(tools, opts.Tools...)
+	// Resolve SkillsOnly mode: explicit opts takes precedence over config file.
+	skillsOnly := opts.SkillsOnly
+	if !skillsOnly && opts.Config != nil && opts.Config.Tools != nil && opts.Config.Tools.SkillsOnly != nil {
+		skillsOnly = *opts.Config.Tools.SkillsOnly
 	}
+
+	// Tool registration strategy depends on SkillsOnly mode:
+	//
+	// Normal mode:   apiOpts.Tools = BuiltinTools + MCP tools
+	//                SDK sees non-empty Tools → skips its own builtins (skill, etc.)
+	//                OpenOcta BuiltinTools provides bash; skill is not needed.
+	//
+	// SkillsOnly:    apiOpts.Tools = nil (empty)
+	//                apiOpts.CustomTools = MCP tools (added after SDK builtins)
+	//                apiOpts.EnabledBuiltinTools = [skill, bash]
+	//                SDK registers its own builtins (skill + bash) + CustomTools (MCP)
+	//                The SkillsOnly whitelist then restricts visibility to only
+	//                tools declared in matched skills' allowed-tools frontmatter.
 	apiOpts := api.Options{
 		ModelFactory: opts.ModelFactory,
-		Tools:        tools,
 		ProjectRoot:  projectRoot,
+	}
+	var tools []tool.Tool
+	if skillsOnly {
+		apiOpts.EnabledBuiltinTools = []string{"skill", "bash"}
+		if len(opts.Tools) > 0 {
+			apiOpts.CustomTools = append([]tool.Tool{}, opts.Tools...)
+		}
+	} else {
+		tools = BuiltinTools(projectRoot, !enableSandbox)
+		if len(opts.Tools) > 0 {
+			tools = append(tools, opts.Tools...)
+		}
+		apiOpts.Tools = tools
 	}
 	if opts.TokenLimit > 0 {
 		apiOpts.TokenLimit = opts.TokenLimit
@@ -77,6 +101,8 @@ func New(ctx context.Context, opts Options) (*Runtime, error) {
 	if apiOpts.SettingsOverrides == nil {
 		apiOpts.SettingsOverrides = &agentsdkConfg.Settings{}
 	}
+	// disallowedTools managed via settings.json (retrieve_*, Read, Write, etc.)
+	// OPENOCTA_SKYLARK=false env handles Skylark engine disable at source
 	// toolOutput 默认阈值（bytes）。SDK 默认 64KB；这里下调以更积极地避免 history 被长输出淹没。
 	// 若你后续希望更精确地按“runes”控制，需要在 agentsdk-go 侧把 DefaultThresholdRunes 暴露到 settings 或 Options。
 	if apiOpts.SettingsOverrides.ToolOutput == nil {
@@ -84,6 +110,9 @@ func New(ctx context.Context, opts Options) (*Runtime, error) {
 	}
 	if apiOpts.SettingsOverrides.ToolOutput.DefaultThresholdBytes <= 0 {
 		apiOpts.SettingsOverrides.ToolOutput.DefaultThresholdBytes = 16 * 1024
+	}
+	if skillsOnly {
+		apiOpts.SkillsOnly = true
 	}
 	// 添加环境变量：1) 写入 SettingsOverrides.Env 供 hooks/settings 使用；2) 写入进程环境供 bash 等工具继承
 	if opts.Config != nil && opts.Config.Env != nil && len(opts.Config.Env.Vars) > 0 {
@@ -373,6 +402,10 @@ type Options struct {
 	SessionHistoryTransform api.SessionHistoryTransform
 	// TokenLimit is api.Options.TokenLimit: when > 0, trims conversation history to an estimated token budget (e.g. from models.providers.*.models[].contextWindow).
 	TokenLimit int
+	// SkillsOnly restricts the agent to only skill-defined operations.
+	// When true, the model can only call the "skill" tool plus any tools declared in matched skills' allowed-tools frontmatter.
+	// When false (default), all registered tools are available.
+	SkillsOnly bool
 }
 
 func resolveApprovalQueueStorePath(s *config.SandboxConfig, env func(string) string) string {
@@ -662,12 +695,21 @@ func writeApprovalQueueSettings(env func(string) string, cfg *config.SandboxAppr
 		}
 	}
 
-	// Build settings structure
-	settings := struct {
-		Permissions *agentsdkConfg.PermissionsConfig `json:"permissions,omitempty"`
-	}{
-		Permissions: perms,
+	// Read existing settings to preserve non-permissions fields (e.g. disallowedTools)
+	var existing map[string]json.RawMessage
+	if raw, err := os.ReadFile(settingsPath); err == nil && len(raw) > 0 {
+		_ = json.Unmarshal(raw, &existing)
 	}
+	if existing == nil {
+		existing = map[string]json.RawMessage{}
+	}
+
+	// Marshal permissions
+	permsData, err := json.Marshal(perms)
+	if err != nil {
+		return fmt.Errorf("failed to marshal permissions: %w", err)
+	}
+	existing["permissions"] = permsData
 
 	// Create directory if needed
 	dir := filepath.Dir(settingsPath)
@@ -676,7 +718,7 @@ func writeApprovalQueueSettings(env func(string) string, cfg *config.SandboxAppr
 	}
 
 	// Marshal to JSON
-	data, err := json.MarshalIndent(settings, "", "  ")
+	data, err := json.MarshalIndent(existing, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal settings: %w", err)
 	}
