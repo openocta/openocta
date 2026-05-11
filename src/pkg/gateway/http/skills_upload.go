@@ -265,7 +265,7 @@ func (s *Server) handleSkillsUpload(w http.ResponseWriter, r *http.Request) {
 			if prefix != "" && strings.HasPrefix(clean, prefix) {
 				rel = strings.TrimPrefix(clean, prefix)
 			}
-			if rel == "" || rel == clean && strings.Contains(clean, "/") {
+			if rel == "" || (prefix != "" && !strings.HasPrefix(clean, prefix)) {
 				continue
 			}
 			dest := filepath.Join(targetDir, filepath.FromSlash(rel))
@@ -520,7 +520,8 @@ func (s *Server) handleEmployeeSkillsUpload(w http.ResponseWriter, r *http.Reque
 			if prefix != "" && strings.HasPrefix(clean, prefix) {
 				rel = strings.TrimPrefix(clean, prefix)
 			}
-			if rel == "" || (prefix != "" && rel == clean) {
+			// Skip if: 1) relative path is empty, or 2) file is outside the prefix directory
+			if rel == "" || (prefix != "" && !strings.HasPrefix(clean, prefix)) {
 				continue
 			}
 			dest := filepath.Join(targetDir, filepath.FromSlash(rel))
