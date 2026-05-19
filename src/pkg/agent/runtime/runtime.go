@@ -105,6 +105,16 @@ func New(ctx context.Context, opts Options) (*Runtime, error) {
 	var skillSandboxDirs []string
 	if opts.EnableSkills {
 		regs, dirs := LoadSkillRegistrationsWithBaseDirs(projectRoot, opts.Config)
+		employeeID := strings.TrimSpace(opts.EmployeeID)
+		if employeeID != "" {
+			env := opts.Env
+			if env == nil {
+				env = os.Getenv
+			}
+			empRegs, empDirs := LoadSkillRegistrationsForEmployee(projectRoot, opts.Config, employeeID, env)
+			regs = mergeSkillRegistrations(regs, empRegs)
+			dirs = mergeAbsDirs(dirs, empDirs)
+		}
 		if len(regs) > 0 {
 			apiOpts.Skills = regs
 		}
@@ -264,8 +274,9 @@ func New(ctx context.Context, opts Options) (*Runtime, error) {
 	// Skylark 在运行时构建阶段强制关闭，不读取 OPENOCTA_SKYLARK / agents.defaults.skylark / opts.Skylark。
 	apiOpts.Skylark = &api.SkylarkOptions{Enabled: false}
 	if opts.EnableSystemPrompt {
+		var base string
 		if opts.SystemPromptOverrides != "" {
-			apiOpts.SystemPrompt = opts.SystemPromptOverrides
+			base = opts.SystemPromptOverrides
 		} else {
 			env := opts.Env
 			if env == nil {
@@ -278,8 +289,18 @@ func New(ctx context.Context, opts Options) (*Runtime, error) {
 				ProjectRoot:  projectRoot,
 			})
 			if err == nil {
-				apiOpts.SystemPrompt = prompt
+				base = prompt
 			}
+		}
+		if skillsSection := BuildSystemPromptSkillsSection(projectRoot, opts); skillsSection != "" {
+			if base != "" {
+				base = strings.TrimSpace(base) + "\n\n" + skillsSection
+			} else {
+				base = skillsSection
+			}
+		}
+		if base != "" {
+			apiOpts.SystemPrompt = base
 		}
 	}
 
@@ -309,6 +330,8 @@ type Options struct {
 	Config *config.OpenOctaConfig
 	// EnableSkills loads skills from built-in, ~/.openocta/skills, and <workspace>/skills and registers them with the runtime.
 	EnableSkills bool
+	// EmployeeID when set with EnableSkills merges digital-employee skills (~/.openocta/employee_skills/<id>, manifest.skillIds filter).
+	EmployeeID string
 	// EnableSubagents enables subagent dispatch when Subagents is non-empty.
 	EnableSubagents bool
 	// EnableSandbox attaches sandbox manager for tool execution (filesystem/network/resource limits).

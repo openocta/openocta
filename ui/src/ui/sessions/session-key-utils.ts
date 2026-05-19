@@ -37,6 +37,18 @@ export function parseAgentSessionKey(
   return { agentId, rest };
 }
 
+/** Swarm member session: agent:<agentId>:swarm:<workspaceId>:<memberId> (optional employee segment). */
+export function isSwarmSessionKey(sessionKey: string | undefined | null): boolean {
+  const raw = (sessionKey ?? "").trim();
+  if (!raw) {
+    return false;
+  }
+  if (/^agent:[^:]+:swarm:[^:]+:[^:]+$/i.test(raw)) {
+    return true;
+  }
+  return /^agent:[^:]+:employee:[^:]+:swarm:[^:]+:[^:]+$/i.test(raw);
+}
+
 export function isSubagentSessionKey(sessionKey: string | undefined | null): boolean {
   const raw = (sessionKey ?? "").trim();
   if (!raw) {

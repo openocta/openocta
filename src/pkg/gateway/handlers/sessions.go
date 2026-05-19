@@ -15,6 +15,7 @@ import (
 	"github.com/openocta/openocta/pkg/logging"
 	"github.com/openocta/openocta/pkg/paths"
 	"github.com/openocta/openocta/pkg/session"
+	"github.com/openocta/openocta/pkg/swarm"
 )
 
 var sessionsLog = logging.Sub("sessions")
@@ -775,20 +776,78 @@ func DeleteSessionsForEmployeeID(employeeID string, ctx *Context) error {
 		}
 	}
 	for _, key := range keysToDelete {
-		target := resolveGatewaySessionStoreTarget(cfg, key, env)
-		entry, _ := loadSessionEntryFromStore(storePath, key, target.storeKeys)
-		if entry.SessionID != "" {
-			candidates := resolveSessionTranscriptCandidates(entry.SessionID, storePath, entry.SessionFile, target.agentID, env)
-			for _, candidate := range candidates {
-				if _, err := os.Stat(candidate); err == nil {
-					removeSessionTranscriptFile(candidate)
-				}
-			}
-		}
-		delete(store, key)
+		deleteSessionFromStore(cfg, env, storePath, store, key)
 	}
 	if len(keysToDelete) > 0 {
 		return session.SaveSessionStore(storePath, store)
+	}
+	return nil
+}
+
+func deleteSessionFromStore(cfg *config.OpenOctaConfig, env func(string) string, storePath string, store session.SessionStore, key string) {
+	target := resolveGatewaySessionStoreTarget(cfg, key, env)
+	entry, _ := loadSessionEntryFromStore(storePath, key, target.storeKeys)
+	if entry.SessionID != "" {
+		candidates := resolveSessionTranscriptCandidates(entry.SessionID, storePath, entry.SessionFile, target.agentID, env)
+		for _, candidate := range candidates {
+			if _, err := os.Stat(candidate); err == nil {
+				removeSessionTranscriptFile(candidate)
+			}
+		}
+	}
+	delete(store, key)
+	for _, alias := range target.storeKeys {
+		delete(store, alias)
+	}
+}
+
+// DeleteSessionsForSwarmWorkspace removes chat sessions and transcripts for all members of a swarm workspace.
+func DeleteSessionsForSwarmWorkspace(workspaceID string, explicitKeys []string, ctx *Context) error {
+	workspaceID = strings.TrimSpace(workspaceID)
+	if workspaceID == "" {
+		return nil
+	}
+	cfg := loadConfigFromContext(ctx)
+	if cfg == nil {
+		return nil
+	}
+	env := func(k string) string { return os.Getenv(k) }
+
+	explicit := map[string]bool{}
+	for _, k := range explicitKeys {
+		k = strings.TrimSpace(strings.ToLower(k))
+		if k != "" {
+			explicit[k] = true
+		}
+	}
+
+	for _, agentID := range listConfiguredAgentIDs(cfg, env) {
+		storePath := session.ResolveDefaultSessionStorePath(agentID, env)
+		store, err := session.LoadSessionStore(storePath)
+		if err != nil {
+			continue
+		}
+		changed := false
+		var keysToDelete []string
+		for k := range store {
+			lower := strings.ToLower(k)
+			if explicit[lower] {
+				keysToDelete = append(keysToDelete, k)
+				continue
+			}
+			if _, ws, _, ok := swarm.ParseMemberSessionKey(k); ok && strings.EqualFold(ws, workspaceID) {
+				keysToDelete = append(keysToDelete, k)
+			}
+		}
+		for _, key := range keysToDelete {
+			deleteSessionFromStore(cfg, env, storePath, store, key)
+			changed = true
+		}
+		if changed {
+			if err := session.SaveSessionStore(storePath, store); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
@@ -1841,7 +1900,9 @@ func listSessionsFromStore(cfg *config.OpenOctaConfig, storePath string, store s
 			if key == "unknown" || key == "global" {
 				continue
 			}
-			// TODO: Check entry.SpawnedBy when SessionEntry supports it
+			if strings.TrimSpace(entry.SpawnedBy) != spawnedBy {
+				continue
+			}
 		}
 
 		// 5. Filter by label
@@ -2154,6 +2215,9 @@ func applySessionsPatchToStore(cfg *config.OpenOctaConfig, store session.Session
 	if params.VerboseLevel != nil {
 		entry.VerboseLevel = *params.VerboseLevel
 	}
+	if params.SpawnedBy != nil {
+		entry.SpawnedBy = strings.TrimSpace(*params.SpawnedBy)
+	}
 
 	store[storeKey] = entry
 	return entry, nil
@@ -2168,6 +2232,9 @@ func sessionEntryToMap(entry session.SessionEntry) map[string]interface{} {
 	}
 	if entry.Label != "" {
 		m["label"] = entry.Label
+	}
+	if entry.SpawnedBy != "" {
+		m["spawnedBy"] = entry.SpawnedBy
 	}
 	if entry.Channel != "" {
 		m["channel"] = entry.Channel

@@ -246,6 +246,10 @@ export async function refreshActiveTab(host: SettingsHost) {
   if (host.tab === "digitalEmployee") {
     await loadDigitalEmployees(host as unknown as Parameters<typeof loadDigitalEmployees>[0]);
   }
+  if (host.tab === "agentSwarm") {
+    const { ensureSwarmWorkspace } = await import("./controllers/swarm.ts");
+    await ensureSwarmWorkspace(host as unknown as Parameters<typeof ensureSwarmWorkspace>[0]);
+  }
   if (host.tab === "agents") {
     await loadAgents(host as unknown as OpenClawApp);
     await loadConfig(host as unknown as Parameters<typeof loadConfig>[0]);

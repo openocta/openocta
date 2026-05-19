@@ -58,6 +58,9 @@ func AgentHandler(opts HandlerOpts) error {
 		invoker = &gatewayInvokerAdapter{invoke: opts.Context.InvokeMethod}
 	}
 	agentTools := tools.DefaultToolsWithInvoker(invoker)
+	if IsAgentToAgentEnabled(opts.Context.Config) {
+		agentTools = append(agentTools, SwarmTools(true)...)
+	}
 	if opts.Context != nil && opts.Context.MCPTools != nil {
 		if mcpTools, mcpErr := opts.Context.MCPTools(ctx); mcpErr == nil && len(mcpTools) > 0 {
 			agentTools = append(agentTools, mcpTools...)
@@ -152,6 +155,9 @@ func RunIsolatedAgentTurn(ctx *Context, agentID string, sessionKey string, messa
 		invoker = &gatewayInvokerAdapter{invoke: ctx.InvokeMethod}
 	}
 	agentTools := tools.DefaultToolsWithInvoker(invoker)
+	if IsAgentToAgentEnabled(ctx.Config) {
+		agentTools = append(agentTools, SwarmTools(true)...)
+	}
 	if ctx.MCPTools != nil {
 		if mcpTools, mcpErr := ctx.MCPTools(runCtx); mcpErr == nil && len(mcpTools) > 0 {
 			agentTools = append(agentTools, mcpTools...)
@@ -170,6 +176,7 @@ func RunIsolatedAgentTurn(ctx *Context, agentID string, sessionKey string, messa
 		ProjectRoot:         projectRoot,
 		Config:              ctx.Config,
 		EnableSkills:        true,
+		EmployeeID:          parseEmployeeIDFromSessionKey(sessionKey),
 		EnableSubagents:     true,
 		EnableSandbox:       true,
 		EnableApprovalQueue: true,
@@ -183,7 +190,10 @@ func RunIsolatedAgentTurn(ctx *Context, agentID string, sessionKey string, messa
 	prompt := message
 	if ctx.Config != nil {
 		workspaceDir := agent.ResolveAgentWorkspaceDir(ctx.Config, agentID, os.Getenv)
-		entries, _ := runtime.LoadSkillsForWorkspace(workspaceDir, ctx.Config)
+		entries := runtime.LoadEmployeeSkillEntries(workspaceDir, ctx.Config, parseEmployeeIDFromSessionKey(sessionKey), os.Getenv)
+		if len(entries) == 0 {
+			entries, _ = runtime.LoadSkillsForWorkspace(workspaceDir, ctx.Config)
+		}
 		if len(entries) > 0 {
 			skillsPrompt := runtime.BuildSkillsPrompt(entries, ctx.Config)
 			if strings.TrimSpace(skillsPrompt) != "" {
@@ -224,6 +234,9 @@ func RunCronAgentOnce(ctx *Context, agentID string, sessionKey string, message s
 		invoker = &gatewayInvokerAdapter{invoke: ctx.InvokeMethod}
 	}
 	agentTools := tools.DefaultToolsWithInvoker(invoker)
+	if IsAgentToAgentEnabled(ctx.Config) {
+		agentTools = append(agentTools, SwarmTools(true)...)
+	}
 	if ctx.MCPTools != nil {
 		if mcpTools, mcpErr := ctx.MCPTools(runCtx); mcpErr == nil && len(mcpTools) > 0 {
 			agentTools = append(agentTools, mcpTools...)
@@ -244,6 +257,7 @@ func RunCronAgentOnce(ctx *Context, agentID string, sessionKey string, message s
 		ProjectRoot:         projectRoot,
 		Config:              ctx.Config,
 		EnableSkills:        true,
+		EmployeeID:          parseEmployeeIDFromSessionKey(sessionKey),
 		EnableSubagents:     true,
 		EnableSandbox:       true,
 		EnableApprovalQueue: true,
@@ -258,7 +272,10 @@ func RunCronAgentOnce(ctx *Context, agentID string, sessionKey string, message s
 	prompt := message
 	if ctx.Config != nil {
 		workspaceDir := agent.ResolveAgentWorkspaceDir(ctx.Config, agentID, os.Getenv)
-		entries, _ := runtime.LoadSkillsForWorkspace(workspaceDir, ctx.Config)
+		entries := runtime.LoadEmployeeSkillEntries(workspaceDir, ctx.Config, parseEmployeeIDFromSessionKey(sessionKey), os.Getenv)
+		if len(entries) == 0 {
+			entries, _ = runtime.LoadSkillsForWorkspace(workspaceDir, ctx.Config)
+		}
 		if len(entries) > 0 {
 			skillsPrompt := runtime.BuildSkillsPrompt(entries, ctx.Config)
 			if strings.TrimSpace(skillsPrompt) != "" {

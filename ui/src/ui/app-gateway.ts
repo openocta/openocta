@@ -289,6 +289,48 @@ function handleGatewayEventUnsafe(host: GatewayHost, evt: GatewayEventFrame) {
       host.execApprovalQueue = removeExecApproval(host.execApprovalQueue, resolved.id);
     }
   }
+
+  if (evt.event === "swarm.member.updated") {
+    const app = host as unknown as OpenClawApp;
+    if (app.tab !== "agentSwarm") {
+      return;
+    }
+    void import("./controllers/swarm.ts").then(({ applySwarmMemberUpdated }) => {
+      const member = (evt.payload as { member?: import("./types/swarm-types.ts").SwarmMember })?.member;
+      if (member) {
+        applySwarmMemberUpdated(app, member);
+      }
+    });
+    return;
+  }
+
+  if (evt.event === "swarm.task.delta") {
+    const app = host as unknown as OpenClawApp;
+    if (app.tab !== "agentSwarm") {
+      return;
+    }
+    void import("./controllers/swarm.ts").then(({ applySwarmTaskDelta }) => {
+      applySwarmTaskDelta(
+        app,
+        (evt.payload ?? {}) as {
+          memberId?: string;
+          stream?: string;
+          data?: Record<string, unknown>;
+        },
+      );
+    });
+    return;
+  }
+
+  if (evt.event === "swarm.task.final") {
+    const app = host as unknown as OpenClawApp;
+    if (app.tab !== "agentSwarm") {
+      return;
+    }
+    void import("./controllers/swarm.ts").then(({ applySwarmTaskFinal }) => {
+      void applySwarmTaskFinal(app);
+    });
+  }
 }
 
 export function applySnapshot(host: GatewayHost, hello: GatewayHelloOk) {

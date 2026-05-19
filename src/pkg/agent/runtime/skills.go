@@ -11,33 +11,161 @@ import (
 
 	agentSkills "github.com/openocta/openocta/pkg/agent/skills"
 	"github.com/openocta/openocta/pkg/config"
+	"github.com/openocta/openocta/pkg/employees"
+	"github.com/openocta/openocta/pkg/paths"
 	"github.com/stellarlinkco/agentsdk-go/pkg/api"
 	sdkSkills "github.com/stellarlinkco/agentsdk-go/pkg/runtime/skills"
 )
 
-// BuildSkillRegistrationsFromThreeLocations loads skills from three locations and returns
-// api.SkillRegistration slice for use with api.Options.Skills. Locations (lowest to highest precedence):
-// 1. Built-in skills (shipped with install: OPENCLAW_BUNDLED_SKILLS_DIR or executable-relative)
-// 2. Managed/local skills (~/.openclaw/skills)
-// 3. Workspace skills (<workspace>/skills, i.e. workspaceDir/skills)
-func BuildSkillRegistrationsFromThreeLocations(workspaceDir string, cfg *config.OpenOctaConfig) []api.SkillRegistration {
-	regs, _ := LoadSkillRegistrationsWithBaseDirs(workspaceDir, cfg)
-	return regs
-}
-
 // LoadSkillRegistrationsWithBaseDirs loads skills the same way as BuildSkillRegistrationsFromThreeLocations and
 // returns absolute base directories (folders containing SKILL.md) for sandbox allowlists and path resolution.
 func LoadSkillRegistrationsWithBaseDirs(workspaceDir string, cfg *config.OpenOctaConfig) ([]api.SkillRegistration, []string) {
+	entries, err := LoadWorkspaceSkillEntries(workspaceDir, cfg)
+	if err != nil || len(entries) == 0 {
+		return nil, nil
+	}
+	return entriesToSkillRegistrations(entries), uniqueAbsSkillBaseDirs(entries)
+}
+
+// LoadWorkspaceSkillEntries loads global/workspace skills (bundled, managed, workspace).
+func LoadWorkspaceSkillEntries(workspaceDir string, cfg *config.OpenOctaConfig) ([]agentSkills.Entry, error) {
 	opts := &agentSkills.LoadOptions{
 		Config:           cfg,
 		ManagedSkillsDir: "",
 		BundledSkillsDir: "",
 	}
-	entries, err := agentSkills.LoadWorkspaceEntries(workspaceDir, opts)
-	if err != nil || len(entries) == 0 {
+	return agentSkills.LoadWorkspaceEntries(workspaceDir, opts)
+}
+
+// LoadEmployeeSkillEntries loads skills for a digital employee session:
+// workspace skills (optionally filtered by manifest.skillIds), legacy employee dir skills,
+// and ~/.openocta/employee_skills/<employeeID> uploads. Employee-managed entries override same name.
+func LoadEmployeeSkillEntries(workspaceDir string, cfg *config.OpenOctaConfig, employeeID string, env func(string) string) []agentSkills.Entry {
+	employeeID = strings.TrimSpace(employeeID)
+	if employeeID == "" {
+		return nil
+	}
+	if env == nil {
+		env = os.Getenv
+	}
+
+	baseEntries, _ := LoadWorkspaceSkillEntries(workspaceDir, cfg)
+	merged := make(map[string]agentSkills.Entry)
+	for _, e := range baseEntries {
+		if e.Name != "" {
+			merged[e.Name] = e
+		}
+	}
+
+	m, _ := employees.LoadManifest(employeeID, env)
+
+	employeesRoot := employees.ResolveEmployeesDir(env)
+	legacySkillsDir := filepath.Join(employeesRoot, employeeID, "skills")
+	if entries, err := agentSkills.LoadEntriesFromDir(legacySkillsDir, "employee-managed"); err == nil {
+		for _, e := range entries {
+			if e.Name != "" {
+				merged[e.Name] = e
+			}
+		}
+	}
+
+	stateDir := paths.ResolveStateDir(env)
+	employeeSkillsDir := filepath.Join(stateDir, "employee_skills", employeeID)
+	if entries, err := agentSkills.LoadEntriesFromDir(employeeSkillsDir, "employee-managed"); err == nil {
+		for _, e := range entries {
+			if e.Name != "" {
+				merged[e.Name] = e
+			}
+		}
+	}
+
+	if m != nil && len(m.SkillIDs) > 0 {
+		allowed := make(map[string]struct{}, len(m.SkillIDs))
+		for _, id := range m.SkillIDs {
+			if id = strings.TrimSpace(id); id != "" {
+				allowed[id] = struct{}{}
+			}
+		}
+		if len(allowed) > 0 {
+			for name, e := range merged {
+				if _, ok := allowed[name]; !ok && e.Source != "employee-managed" {
+					delete(merged, name)
+				}
+			}
+		}
+	}
+
+	if len(merged) == 0 {
+		return nil
+	}
+	out := make([]agentSkills.Entry, 0, len(merged))
+	for _, e := range merged {
+		out = append(out, e)
+	}
+	return out
+}
+
+// LoadSkillRegistrationsForEmployee converts employee skill entries to SDK registrations and base dirs.
+func LoadSkillRegistrationsForEmployee(workspaceDir string, cfg *config.OpenOctaConfig, employeeID string, env func(string) string) ([]api.SkillRegistration, []string) {
+	entries := LoadEmployeeSkillEntries(workspaceDir, cfg, employeeID, env)
+	if len(entries) == 0 {
 		return nil, nil
 	}
 	return entriesToSkillRegistrations(entries), uniqueAbsSkillBaseDirs(entries)
+}
+
+// mergeSkillRegistrations merges b into a; registrations in b override same sanitized name in a.
+func mergeSkillRegistrations(a, b []api.SkillRegistration) []api.SkillRegistration {
+	if len(b) == 0 {
+		return a
+	}
+	byName := make(map[string]api.SkillRegistration, len(a)+len(b))
+	order := make([]string, 0, len(a)+len(b))
+	add := func(r api.SkillRegistration) {
+		name := strings.TrimSpace(r.Definition.Name)
+		if name == "" {
+			return
+		}
+		if _, ok := byName[name]; !ok {
+			order = append(order, name)
+		}
+		byName[name] = r
+	}
+	for _, r := range a {
+		add(r)
+	}
+	for _, r := range b {
+		add(r)
+	}
+	out := make([]api.SkillRegistration, 0, len(order))
+	for _, name := range order {
+		out = append(out, byName[name])
+	}
+	return out
+}
+
+// mergeAbsDirs deduplicates absolute directory paths.
+func mergeAbsDirs(a, b []string) []string {
+	seen := make(map[string]struct{})
+	var out []string
+	for _, list := range [][]string{a, b} {
+		for _, p := range list {
+			p = strings.TrimSpace(p)
+			if p == "" {
+				continue
+			}
+			abs, err := filepath.Abs(p)
+			if err != nil || abs == "" {
+				continue
+			}
+			if _, ok := seen[abs]; ok {
+				continue
+			}
+			seen[abs] = struct{}{}
+			out = append(out, abs)
+		}
+	}
+	return out
 }
 
 // entriesToSkillRegistrations converts OPENOCTA skill entries to agentsdk-go SkillRegistration.
@@ -251,13 +379,7 @@ func sanitizeSkillName(s string) string {
 
 // LoadSkillsForWorkspace loads skills for a workspace directory.
 func LoadSkillsForWorkspace(workspaceDir string, cfg *config.OpenOctaConfig) ([]agentSkills.Entry, error) {
-	opts := &agentSkills.LoadOptions{
-		Config:           cfg,
-		ManagedSkillsDir: "",
-		BundledSkillsDir: "",
-	}
-
-	return agentSkills.LoadWorkspaceEntries(workspaceDir, opts)
+	return LoadWorkspaceSkillEntries(workspaceDir, cfg)
 }
 
 // BuildSkillsPrompt builds a skills prompt string for agent runs.
@@ -267,7 +389,35 @@ func BuildSkillsPrompt(entries []agentSkills.Entry, cfg *config.OpenOctaConfig) 
 	filtered := agentSkills.FilterEntries(entries, cfg, eligibility)
 
 	// Build prompt
-	return agentSkills.BuildPrompt(filtered)
+	body := agentSkills.BuildPrompt(filtered)
+	if body == "" {
+		return ""
+	}
+	return "## 可用技能\n\n" + body
+}
+
+// BuildSystemPromptSkillsSection loads skills for the current run (employee or workspace) and returns a system-prompt block.
+func BuildSystemPromptSkillsSection(projectRoot string, opts Options) string {
+	if !opts.EnableSkills {
+		return ""
+	}
+	env := opts.Env
+	if env == nil {
+		env = os.Getenv
+	}
+	var entries []agentSkills.Entry
+	employeeID := strings.TrimSpace(opts.EmployeeID)
+	if employeeID != "" {
+		entries = LoadEmployeeSkillEntries(projectRoot, opts.Config, employeeID, env)
+	}
+	if len(entries) == 0 {
+		entries, _ = LoadWorkspaceSkillEntries(projectRoot, opts.Config)
+	}
+	prompt := BuildSkillsPrompt(entries, opts.Config)
+	if prompt == "" {
+		return ""
+	}
+	return prompt + "\n\n可通过 `skill` 工具按名称激活；匹配关键词时也会自动注入技能内容。"
 }
 
 // ApplySkillEnvOverrides applies skill environment variable overrides.

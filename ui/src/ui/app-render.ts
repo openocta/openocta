@@ -325,6 +325,16 @@ const debouncedLoadUsage = (state: UsageState) => {
   usageDateDebounceTimeout = window.setTimeout(() => void loadUsage(state), 400);
 };
 import { renderDigitalEmployee, renderDigitalEmployeeCreateModal, renderDigitalEmployeeEditModal } from "./views/digital-employee.ts";
+import { renderAgentSwarm } from "./views/agent-swarm.ts";
+import {
+  addSwarmMember,
+  createSwarmWorkspace,
+  deleteSwarmWorkspace,
+  stopAllSwarmAgents,
+  ensureSwarmWorkspace,
+  refreshSwarmWorkspace,
+  sendSwarmMessage,
+} from "./controllers/swarm.ts";
 import {
   loadDigitalEmployees,
   createDigitalEmployee,
@@ -496,6 +506,7 @@ export function renderApp(state: AppViewState) {
   const isScheduledTasks =
     state.tab === "scheduledTasks" || state.tab === "cronHistory" || state.tab === "cron";
   const isMessagePage = state.tab === "message";
+  const isAgentSwarmPage = state.tab === "agentSwarm";
   const isCatalogArea =
     state.tab === "employeeMarket" ||
     state.tab === "skillLibrary" ||
@@ -555,6 +566,7 @@ export function renderApp(state: AppViewState) {
     isChat ? "shell--chat" : "",
     isCatalogArea ? "shell--catalog" : "",
     state.tab === "tutorials" ? "shell--tutorials" : "",
+    isAgentSwarmPage ? "shell--agent-swarm" : "",
     chatFocus ? "shell--chat-focus" : "",
     isSideNavCollapsed ? "shell--nav-collapsed" : "",
     state.onboarding ? "shell--onboarding" : "",
@@ -612,6 +624,7 @@ export function renderApp(state: AppViewState) {
         <nav class="top-tabs" aria-label="Primary navigation">
           ${[
             { tab: "message", label: "消息" },
+            { tab: "agentSwarm", label: "AgentSwarm", beta: true },
             { tab: "scheduledTasks", label: "定时任务" },
             { tab: "employeeMarket", label: "员工市场" },
             { tab: "skillLibrary", label: "技能库" },
@@ -643,6 +656,9 @@ export function renderApp(state: AppViewState) {
                 >
                   ${iconEl}
                   <span class="top-tab__label">${(item as any).label}</span>
+                  ${(item as any).beta
+                    ? html`<span class="nav-badge nav-badge--beta" title="Beta">BETA</span>`
+                    : nothing}
                 </button>
               `;
             }
@@ -657,6 +673,9 @@ export function renderApp(state: AppViewState) {
               >
                 ${iconEl}
                 <span class="top-tab__label">${(item as any).label}</span>
+                ${(item as any).beta
+                  ? html`<span class="nav-badge nav-badge--beta" title="Beta">BETA</span>`
+                  : nothing}
               </button>
             `;
           })}
@@ -715,7 +734,7 @@ export function renderApp(state: AppViewState) {
         }
         </div>
       </header>
-      ${state.tab === "tutorials"
+      ${state.tab === "tutorials" || isAgentSwarmPage
         ? nothing
         : html`<aside
             class="nav ${isCatalogArea ? "nav--catalog" : ""} ${isMessagePage ? "nav--massage" : ""} ${isScheduledTasks || isConfigArea ? "nav--grouped" : ""} ${isSideNavCollapsed ? "nav--collapsed" : ""}"
@@ -1128,8 +1147,8 @@ export function renderApp(state: AppViewState) {
                       : html`<div class="nav-empty"></div>`
         }
       </aside>`}
-      <main class="content ${isChat ? "content--chat" : ""} ${isCatalogArea ? "content--catalog" : ""} ${state.tab === "tutorials" ? "content--tutorials" : ""} ${state.tab === "documentation" ? "content--documentation" : ""} ${state.tab === "llmTrace" && state.llmTraceViewingSessionId != null ? "content--llm-trace-detail" : ""}">
-        ${isCatalogArea || isMessagePage
+      <main class="content ${isChat ? "content--chat" : ""} ${isCatalogArea ? "content--catalog" : ""} ${isAgentSwarmPage ? "content--agent-swarm" : ""} ${state.tab === "tutorials" ? "content--tutorials" : ""} ${state.tab === "documentation" ? "content--documentation" : ""} ${state.tab === "llmTrace" && state.llmTraceViewingSessionId != null ? "content--llm-trace-detail" : ""}">
+        ${isCatalogArea || isMessagePage || isAgentSwarmPage
           ? nothing
           : html`
               <section class="content-header">
@@ -2979,6 +2998,154 @@ export function renderApp(state: AppViewState) {
                 onSplitRatioChange: (ratio: number) => state.handleSplitRatioChange(ratio),
                 assistantName: state.assistantName,
                 assistantAvatar: state.assistantAvatar,
+              })
+            : nothing
+        }
+
+        ${
+          state.tab === "agentSwarm"
+            ? renderAgentSwarm({
+                client: state.client,
+                connected: state.connected,
+                swarmLoading: state.swarmLoading,
+                swarmError: state.swarmError,
+                swarmWorkspaces: state.swarmWorkspaces,
+                swarmActiveWorkspaceId: state.swarmActiveWorkspaceId,
+                swarmMembers: state.swarmMembers,
+                swarmSelectedMemberId: state.swarmSelectedMemberId,
+                swarmGraph: state.swarmGraph,
+                swarmHistory: state.swarmHistory,
+                swarmInput: state.swarmInput,
+                swarmSending: state.swarmSending,
+                swarmStreamText: state.swarmStreamText,
+                swarmReasoningText: state.swarmReasoningText,
+                swarmToolEntries: state.swarmToolEntries,
+                swarmTreeCollapsed: state.swarmTreeCollapsed,
+                swarmMidSplit: state.swarmMidSplit,
+                swarmEventsCollapsed: state.swarmEventsCollapsed,
+                swarmVizScale: state.swarmVizScale,
+                swarmVizOffsetX: state.swarmVizOffsetX,
+                swarmVizOffsetY: state.swarmVizOffsetY,
+                swarmPanelCollapsed: state.swarmPanelCollapsed,
+                createModalOpen: state.swarmCreateModalOpen,
+                createModalLabel: state.swarmCreateModalLabel,
+                deleteModalOpen: state.swarmDeleteModalOpen,
+                deleteModalLabel: state.swarmDeleteTargetLabel,
+                addMemberModalOpen: state.swarmAddMemberModalOpen,
+                addMemberEmployeeId: state.swarmAddMemberEmployeeId,
+                addMemberLabel: state.swarmAddMemberLabel,
+                onSelectWorkspace: async (id) => {
+                  if (id === state.swarmActiveWorkspaceId) return;
+                  state.swarmActiveWorkspaceId = id;
+                  state.swarmSelectedMemberId = null;
+                  state.swarmStreamText = "";
+                  state.swarmReasoningText = "";
+                  state.swarmToolEntries = [];
+                  await refreshSwarmWorkspace(state);
+                },
+                onOpenDeleteWorkspace: (id, label) => {
+                  state.swarmDeleteTargetId = id;
+                  state.swarmDeleteTargetLabel = label;
+                  state.swarmDeleteModalOpen = true;
+                },
+                onStopAll: () => void stopAllSwarmAgents(state),
+                onSelectMember: (id) => {
+                  state.swarmSelectedMemberId = id;
+                  state.swarmStreamText = "";
+                  state.swarmReasoningText = "";
+                  state.swarmToolEntries = [];
+                },
+                onOpenCreateWorkspace: () => {
+                  const n = state.swarmWorkspaces.length + 1;
+                  state.swarmCreateModalLabel = n > 1 ? `蜂群 ${n}` : "蜂群";
+                  state.swarmCreateModalOpen = true;
+                },
+                onCreateModalClose: () => {
+                  state.swarmCreateModalOpen = false;
+                },
+                onCreateModalLabelChange: (value) => {
+                  state.swarmCreateModalLabel = value;
+                },
+                onCreateModalSubmit: async () => {
+                  const label = state.swarmCreateModalLabel.trim() || "蜂群";
+                  await createSwarmWorkspace(state, label);
+                  if (!state.swarmError) {
+                    state.swarmCreateModalOpen = false;
+                  }
+                },
+                onDeleteModalClose: () => {
+                  state.swarmDeleteModalOpen = false;
+                  state.swarmDeleteTargetId = null;
+                  state.swarmDeleteTargetLabel = "";
+                },
+                onDeleteModalSubmit: async () => {
+                  const id = state.swarmDeleteTargetId;
+                  if (!id) return;
+                  await deleteSwarmWorkspace(state, id);
+                  if (!state.swarmError) {
+                    state.swarmDeleteModalOpen = false;
+                    state.swarmDeleteTargetId = null;
+                    state.swarmDeleteTargetLabel = "";
+                  }
+                },
+                onStartConversation: async () => {
+                  await ensureSwarmWorkspace(state);
+                },
+                onOpenAddMember: async () => {
+                  if (!state.swarmActiveWorkspaceId) {
+                    await ensureSwarmWorkspace(state);
+                  }
+                  state.swarmAddMemberEmployeeId = "";
+                  state.swarmAddMemberLabel = "子任务";
+                  state.swarmAddMemberModalOpen = true;
+                },
+                onAddMemberModalClose: () => {
+                  state.swarmAddMemberModalOpen = false;
+                },
+                onAddMemberEmployeeIdChange: (value) => {
+                  state.swarmAddMemberEmployeeId = value;
+                },
+                onAddMemberLabelChange: (value) => {
+                  state.swarmAddMemberLabel = value;
+                },
+                onAddMemberModalSubmit: async () => {
+                  const employeeId = state.swarmAddMemberEmployeeId.trim();
+                  const label = state.swarmAddMemberLabel.trim();
+                  await addSwarmMember(state, {
+                    employeeId: employeeId || undefined,
+                    label: employeeId ? undefined : label || undefined,
+                  });
+                  if (!state.swarmError) {
+                    state.swarmAddMemberModalOpen = false;
+                  }
+                },
+                onSend: () => void sendSwarmMessage(state),
+                onInputChange: (value) => (state.swarmInput = value),
+                onTreeToggle: (memberId) => {
+                  state.swarmTreeCollapsed = {
+                    ...state.swarmTreeCollapsed,
+                    [memberId]: !state.swarmTreeCollapsed[memberId],
+                  };
+                },
+                onMidSplitChange: (ratio) => {
+                  state.swarmMidSplit = ratio;
+                },
+                onEventsCollapsedChange: (collapsed) => {
+                  state.swarmEventsCollapsed = collapsed;
+                },
+                onVizScaleChange: (scale) => {
+                  state.swarmVizScale = scale;
+                },
+                onVizOffsetChange: (x, y) => {
+                  state.swarmVizOffsetX = x;
+                  state.swarmVizOffsetY = y;
+                },
+                onPanelToggle: (panelId) => {
+                  state.swarmPanelCollapsed = {
+                    ...state.swarmPanelCollapsed,
+                    [panelId]: !state.swarmPanelCollapsed[panelId],
+                  };
+                },
               })
             : nothing
         }

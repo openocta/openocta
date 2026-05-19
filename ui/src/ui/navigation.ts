@@ -36,7 +36,7 @@ export type Tab =
   | "nodes"
   | "chat"
   | "digitalEmployee"
-  // | "agentSwarm"
+  | "agentSwarm"
   | "config"
   | "envVars"
   | "models"
@@ -69,7 +69,7 @@ const TAB_PATHS: Record<Tab, string> = {
   nodes: "/nodes",
   chat: "/chat",
   digitalEmployee: "/digital-employee",
-  // agentSwarm: "/agent-swarm",
+  agentSwarm: "/agent-swarm",
   config: "/config",
   envVars: "/env-vars",
   models: "/models",
@@ -209,8 +209,8 @@ export function iconForTab(tab: Tab, active = false): IconName {
       return "messageSquare";
     case "digitalEmployee":
       return "users";
-    // case "agentSwarm":
-    //   return "brain";
+    case "agentSwarm":
+      return "brain";
     case "overview":
       return "overviewGrid";
     case "channels":
@@ -300,8 +300,8 @@ export function titleForTab(tab: Tab) {
       return t("navTitleChat");
     case "digitalEmployee":
       return t("navTitleDigitalEmployee");
-    // case "agentSwarm":
-    //   return t("navTitleAgentSwarm");
+    case "agentSwarm":
+      return t("navTitleAgentSwarm");
     case "config":
       return t("navTitleConfig");
     case "envVars":
@@ -442,8 +442,8 @@ export function subtitleForTab(tab: Tab) {
       return t("subtitleChat");
     case "digitalEmployee":
       return t("subtitleDigitalEmployee");
-    // case "agentSwarm":
-    //   return t("subtitleAgentSwarm");
+    case "agentSwarm":
+      return t("subtitleAgentSwarm");
     case "config":
       return t("subtitleConfig");
     case "envVars":

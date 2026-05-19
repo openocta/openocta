@@ -20,20 +20,30 @@ func BuildPrompt(entries []Entry) string {
 			continue
 		}
 
-		// Build skill description
-		desc := entry.Name
-		if entry.Metadata != nil && entry.Metadata.PrimaryEnv != "" {
-			desc += " (env: " + entry.Metadata.PrimaryEnv + ")"
+		desc := strings.TrimSpace(entry.Name)
+		if entry.Frontmatter != nil {
+			if d := strings.TrimSpace(entry.Frontmatter["description"]); d != "" {
+				desc = d
+			}
 		}
-
-		parts = append(parts, "- "+desc)
+		if entry.Metadata != nil && entry.Metadata.SkillKey != "" && desc == entry.Name {
+			desc = entry.Metadata.SkillKey
+		}
+		line := "- **" + entry.Name + "**"
+		if desc != "" && desc != entry.Name {
+			line += ": " + desc
+		}
+		if entry.Metadata != nil && entry.Metadata.PrimaryEnv != "" {
+			line += " (env: " + entry.Metadata.PrimaryEnv + ")"
+		}
+		parts = append(parts, line)
 	}
 
 	if len(parts) == 0 {
 		return ""
 	}
 
-	return "Available skills:\n" + strings.Join(parts, "\n")
+	return strings.Join(parts, "\n")
 }
 
 // ResolvePromptForRun resolves the skills prompt for an agent run.

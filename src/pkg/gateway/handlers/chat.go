@@ -19,7 +19,6 @@ import (
 	mcpManager "github.com/openocta/openocta/pkg/acp/mcp"
 	"github.com/openocta/openocta/pkg/agent"
 	"github.com/openocta/openocta/pkg/agent/runtime"
-	agentSkills "github.com/openocta/openocta/pkg/agent/skills"
 	"github.com/openocta/openocta/pkg/agent/tools"
 	"github.com/openocta/openocta/pkg/channels"
 	"github.com/openocta/openocta/pkg/config"
@@ -482,66 +481,9 @@ func buildSkillsSnapshotForSession(projectRoot string, cfg *config.OpenOctaConfi
 // 1) ~/.openocta/employees/<employeeID>/skills 下的用户自建 skills
 // 2) manifest.skillIds 中引用的全局 skills（基于 workspace 加载并按名称过滤）
 func buildSkillsSnapshotForEmployee(projectRoot string, cfg *config.OpenOctaConfig, employeeID string) interface{} {
-	env := func(k string) string { return os.Getenv(k) }
-
-	// 基础：workspace skills（供 manifest.skillIds 过滤）
-	baseEntries, _ := runtime.LoadSkillsForWorkspace(projectRoot, cfg)
-	merged := make(map[string]agentSkills.Entry)
-	for _, e := range baseEntries {
-		if e.Name != "" {
-			merged[e.Name] = e
-		}
-	}
-
-	// 员工 manifest：若不存在则只依赖内置目录。
-	m, _ := employees.LoadManifest(employeeID, env)
-
-	// 1) ~/.openocta/employees/<employeeID>/skills（旧路径，保留兼容）
-	employeesRoot := employees.ResolveEmployeesDir(env)
-	legacySkillsDir := filepath.Join(employeesRoot, employeeID, "skills")
-	if entries, err := agentSkills.LoadEntriesFromDir(legacySkillsDir, "employee-managed"); err == nil {
-		for _, e := range entries {
-			if e.Name != "" {
-				merged[e.Name] = e
-			}
-		}
-	}
-
-	// 2) ~/.openocta/employee_skills/<employeeID>（新路径，上传专属技能）
-	stateDir := paths.ResolveStateDir(env)
-	employeeSkillsDir := filepath.Join(stateDir, "employee_skills", employeeID)
-	if entries, err := agentSkills.LoadEntriesFromDir(employeeSkillsDir, "employee-managed"); err == nil {
-		for _, e := range entries {
-			if e.Name != "" {
-				merged[e.Name] = e
-			}
-		}
-	}
-
-	// 3) manifest.skillIds 过滤：仅保留指定名称的 workspace skills（若 manifest 存在且有 skillIds）。
-	if m != nil && len(m.SkillIDs) > 0 {
-		allowed := make(map[string]struct{}, len(m.SkillIDs))
-		for _, id := range m.SkillIDs {
-			if id = strings.TrimSpace(id); id != "" {
-				allowed[id] = struct{}{}
-			}
-		}
-		if len(allowed) > 0 {
-			for name, e := range merged {
-				if _, ok := allowed[name]; !ok && e.Source != "employee-managed" {
-					delete(merged, name)
-				}
-			}
-		}
-	}
-
-	if len(merged) == 0 {
+	entries := runtime.LoadEmployeeSkillEntries(projectRoot, cfg, employeeID, os.Getenv)
+	if len(entries) == 0 {
 		return nil
-	}
-
-	entries := make([]agentSkills.Entry, 0, len(merged))
-	for _, e := range merged {
-		entries = append(entries, e)
 	}
 
 	prompt := runtime.BuildSkillsPrompt(entries, cfg)
@@ -1252,6 +1194,12 @@ func ChatSendHandler(opts HandlerOpts) error {
 				}
 			}
 
+			if IsAgentToAgentEnabled(runtimeConfig) {
+				for _, t := range SwarmTools(true) {
+					addTool(t)
+				}
+			}
+
 			agentTools = make([]sdkTool.Tool, 0, len(toolOrder))
 			for _, name := range toolOrder {
 				if t, ok := toolByName[name]; ok && t != nil {
@@ -1276,6 +1224,7 @@ func ChatSendHandler(opts HandlerOpts) error {
 				ProjectRoot:           projectRoot,
 				Config:                runtimeConfig,
 				EnableSkills:          true,
+				EmployeeID:            parseEmployeeIDFromSessionKey(sessionKey),
 				EnableSubagents:       true,
 				EnableSandbox:         true,
 				EnableApprovalQueue:   true,

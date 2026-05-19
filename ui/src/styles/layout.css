@@ -618,6 +618,11 @@
   border: 1px solid rgba(0, 0, 0, 0.12);
 }
 
+.top-tab .nav-badge {
+  margin-left: 0;
+  flex-shrink: 0;
+}
+
 .nav::-webkit-scrollbar {
   display: none; /* Chrome/Safari */
 }

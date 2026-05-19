@@ -441,6 +441,35 @@ export class OpenClawApp extends LitElement implements NativeDialogInvoker {
   @state() skillsUploadTemplate: string | null = null;
   @state() skillsUploadBusy = false;
 
+  @state() swarmLoading = false;
+  @state() swarmError: string | null = null;
+  @state() swarmWorkspaces: import("./types/swarm-types.ts").SwarmWorkspace[] = [];
+  @state() swarmActiveWorkspaceId: string | null = null;
+  @state() swarmMembers: import("./types/swarm-types.ts").SwarmMember[] = [];
+  @state() swarmSelectedMemberId: string | null = null;
+  @state() swarmGraph: import("./types/swarm-types.ts").SwarmGraph | null = null;
+  @state() swarmHistory: import("./types/swarm-types.ts").SwarmHistoryEntry[] = [];
+  @state() swarmInput = "";
+  @state() swarmSending = false;
+  @state() swarmStreamText = "";
+  @state() swarmReasoningText = "";
+  @state() swarmToolEntries: import("./controllers/swarm.ts").SwarmToolEntry[] = [];
+  @state() swarmTreeCollapsed: Record<string, boolean> = {};
+  @state() swarmMidSplit = 0.52;
+  @state() swarmEventsCollapsed = false;
+  @state() swarmVizScale = 0.9;
+  @state() swarmVizOffsetX = 0;
+  @state() swarmVizOffsetY = 0;
+  @state() swarmPanelCollapsed: Record<string, boolean> = { reasoning: true, tools: true };
+  @state() swarmCreateModalOpen = false;
+  @state() swarmCreateModalLabel = "AgentSwarm";
+  @state() swarmDeleteModalOpen = false;
+  @state() swarmDeleteTargetId: string | null = null;
+  @state() swarmDeleteTargetLabel = "";
+  @state() swarmAddMemberModalOpen = false;
+  @state() swarmAddMemberEmployeeId = "";
+  @state() swarmAddMemberLabel = "子任务";
+
   @state() digitalEmployeesLoading = false;
   @state() digitalEmployeesError: string | null = null;
   @state() digitalEmployeesFilter = "";

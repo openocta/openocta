@@ -212,14 +212,77 @@ describe("symbol icon buttons", () => {
     expect(onClearSessions).toHaveBeenCalled();
   });
 
-  it("renders zoom controls with svg icons", () => {
+  it("renders agent swarm send button", () => {
     const container = document.createElement("div");
-    render(renderAgentSwarm(), container);
+    render(
+      renderAgentSwarm({
+        client: null,
+        connected: false,
+        swarmLoading: false,
+        swarmError: null,
+        swarmWorkspaces: [{ id: "ws1", label: "Test", agentId: "main", createdAt: 0, updatedAt: 0 }],
+        swarmActiveWorkspaceId: "ws1",
+        swarmMembers: [
+          {
+            id: "m1",
+            workspaceId: "ws1",
+            sessionKey: "agent:main:swarm:ws1:m1",
+            agentId: "main",
+            label: "Assistant",
+            status: "idle",
+            createdAt: 0,
+            updatedAt: 0,
+          },
+        ],
+        swarmSelectedMemberId: "m1",
+        swarmGraph: null,
+        swarmHistory: [],
+        swarmInput: "",
+        swarmSending: false,
+        swarmStreamText: "",
+        swarmTreeCollapsed: {},
+        swarmMidSplit: 0.52,
+        swarmEventsCollapsed: false,
+        swarmVizScale: 0.9,
+        swarmVizOffsetX: 0,
+        swarmVizOffsetY: 0,
+        swarmPanelCollapsed: {},
+        createModalOpen: false,
+        createModalLabel: "蜂群",
+        addMemberModalOpen: false,
+        addMemberEmployeeId: "",
+        addMemberLabel: "子任务",
+        onSelectWorkspace: vi.fn(),
+        onOpenDeleteWorkspace: vi.fn(),
+        onStopAll: vi.fn(),
+        onSelectMember: vi.fn(),
+        deleteModalOpen: false,
+        deleteModalLabel: "",
+        onDeleteModalClose: vi.fn(),
+        onDeleteModalSubmit: vi.fn(),
+        onOpenCreateWorkspace: vi.fn(),
+        onStartConversation: vi.fn(),
+        onOpenAddMember: vi.fn(),
+        onCreateModalClose: vi.fn(),
+        onCreateModalLabelChange: vi.fn(),
+        onCreateModalSubmit: vi.fn(),
+        onAddMemberModalClose: vi.fn(),
+        onAddMemberEmployeeIdChange: vi.fn(),
+        onAddMemberLabelChange: vi.fn(),
+        onAddMemberModalSubmit: vi.fn(),
+        onSend: vi.fn(),
+        onInputChange: vi.fn(),
+        onTreeToggle: vi.fn(),
+        onMidSplitChange: vi.fn(),
+        onEventsCollapsedChange: vi.fn(),
+        onVizScaleChange: vi.fn(),
+        onVizOffsetChange: vi.fn(),
+        onPanelToggle: vi.fn(),
+      }),
+      container,
+    );
 
-    const buttons = Array.from(container.querySelectorAll<HTMLButtonElement>(".agent-swarm__graph-btn"));
-    expect(buttons[0]?.querySelector("svg")).not.toBeNull();
-    expect(buttons[1]?.querySelector("svg")).not.toBeNull();
-    expect(buttons[2]?.querySelector("svg")).toBeNull();
+    expect(container.querySelector(".agent-swarm__composer .agent-swarm__btn--primary")).not.toBeNull();
   });
 
   it("renders non-pure plus buttons with svg icons", () => {

@@ -21,6 +21,7 @@ import (
 	"github.com/openocta/openocta/pkg/cron"
 	"github.com/openocta/openocta/pkg/gateway/handlers"
 	"github.com/openocta/openocta/pkg/gateway/protocol"
+	"github.com/openocta/openocta/pkg/gateway/swarmsvc"
 	"github.com/openocta/openocta/pkg/gateway/ws"
 	initpkg "github.com/openocta/openocta/pkg/init"
 	"github.com/openocta/openocta/pkg/logging"
@@ -202,6 +203,13 @@ func NewServer(addr string, version string) *Server {
 
 	// Update hub with context and create registry
 	hub.SetContext(ctx)
+	if err := swarmsvc.Init(&handlers.SwarmGatewayRunner{Ctx: ctx}, func(event string, payload interface{}) {
+		if ctx.Broadcast != nil {
+			ctx.Broadcast(event, payload, nil)
+		}
+	}, cfg, env); err != nil {
+		slog.Warn("swarm: init failed", "error", err)
+	}
 	reg := handlers.NewRegistry(ctx)
 	// Allow agent tools to synchronously invoke gateway methods
 	ctx.InvokeMethod = func(method string, params map[string]interface{}) (ok bool, payload interface{}, err *protocol.ErrorShape) {
@@ -360,6 +368,7 @@ func NewServer(addr string, version string) *Server {
 func isAPIPath(path string) bool {
 	return strings.HasPrefix(path, "/_ready") ||
 		strings.HasPrefix(path, "/_dist_debug") ||
+		strings.HasPrefix(path, "/.well-known/") ||
 		strings.HasPrefix(path, "/api/") ||
 		path == "/ws" || strings.HasPrefix(path, "/ws/") || strings.HasPrefix(path, "/ws?") ||
 		strings.HasPrefix(path, "/health") ||
@@ -396,6 +405,8 @@ func (s *Server) registerRoutes() {
 	// GET / 在 Go 1.22 中因末尾为 / 成为前缀匹配，会匹配 /、/assets/xxx 等所有路径。
 	// 更具体的路由（/api/、/ws 等）优先匹配。
 	s.mux.Handle("GET /", http.HandlerFunc(s.handleDist))
+	s.mux.HandleFunc("GET /.well-known/agent.json", s.handleWellKnownAgentJSON)
+	s.mux.HandleFunc("HEAD /.well-known/agent.json", s.handleWellKnownAgentJSON)
 	s.mux.HandleFunc("GET /health", s.requireGatewayToken(s.handleHealth))
 	s.mux.HandleFunc("GET /api/health", s.requireGatewayToken(s.handleHealth))
 	s.mux.HandleFunc("POST /api/skills/upload", s.requireGatewayToken(s.handleSkillsUpload))

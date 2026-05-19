@@ -18,6 +18,7 @@ type SessionEntry struct {
 	UpdatedAt          int64       `json:"updatedAt"`
 	SessionFile        string      `json:"sessionFile,omitempty"`
 	Label              string      `json:"label,omitempty"`
+	SpawnedBy          string      `json:"spawnedBy,omitempty"`
 	Channel            string      `json:"channel,omitempty"`
 	ChatType           string      `json:"chatType,omitempty"`
 	ThinkingLevel      string      `json:"thinkingLevel,omitempty"`
