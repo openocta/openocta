@@ -75,18 +75,18 @@ func DefaultTools() []tool.Tool {
 		EchoTool{},
 		OsInfoTool{},
 		//EnvProbeTool{},
-		//WindowsCmdTool{},
+		WindowsCmdTool{},
 	}
 }
 
 // DefaultToolsWithInvoker returns built-in tools that can call the gateway (cron, config, sessions, etc.).
-// Pass nil invoker to get only EchoTool, OsInfoTool, WindowsCmdTool.
+// Pass nil invoker to get only EchoTool, OsInfo, WindowsCmdTool.
 func DefaultToolsWithInvoker(invoker GatewayInvoker) []tool.Tool {
 	list := []tool.Tool{
 		EchoTool{},
 		OsInfoTool{},
 		//EnvProbeTool{},
-		//WindowsCmdTool{},
+		WindowsCmdTool{},
 	}
 	//if invoker != nil {
 	//	list = append(list,
