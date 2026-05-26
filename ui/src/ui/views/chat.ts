@@ -299,7 +299,6 @@ export function renderChat(props: ChatProps) {
       : "输入消息（回车发送，Shift+回车换行，可粘贴图片）"
     : "Connect to the gateway to start chatting…";
 
-  const splitRatio = props.splitRatio ?? 0.6;
   const sidebarOpen = Boolean(props.sidebarOpen && props.onCloseSidebar);
   const isEmptyThread =
     !props.loading &&
@@ -434,20 +433,13 @@ export function renderChat(props: ChatProps) {
       <div
         class="chat-split-container ${sidebarOpen ? "chat-split-container--open" : ""}"
       >
-        <div
-          class="chat-main"
-          style="flex: ${sidebarOpen ? `0 0 ${splitRatio * 100}%` : "1 1 100%"}"
-        >
+        <div class="chat-main">
           ${thread}
         </div>
 
         ${
           sidebarOpen
             ? html`
-              <resizable-divider
-                .splitRatio=${splitRatio}
-                @resize=${(e: CustomEvent) => props.onSplitRatioChange?.(e.detail.splitRatio)}
-              ></resizable-divider>
               <div class="chat-sidebar">
                 ${renderMarkdownSidebar({
                   content: props.sidebarContent ?? null,

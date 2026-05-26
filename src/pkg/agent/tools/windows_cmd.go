@@ -4,7 +4,9 @@ package tools
 import (
 	"bytes"
 	"context"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -12,7 +14,7 @@ import (
 	"github.com/stellarlinkco/agentsdk-go/pkg/tool"
 )
 
-// WindowsCmdTool executes shell commands on Windows via PowerShell (preferred) or cmd (fallback).
+// WindowsCmdTool executes shell commands on Windows via Git Bash/bash (preferred) or native shells (fallback).
 // Only available when the agent runs on Windows.
 type WindowsCmdTool struct {
 	Timeout time.Duration // Optional: command timeout, defaults to 60s
@@ -25,7 +27,7 @@ func (WindowsCmdTool) Name() string {
 
 // Description returns the tool description.
 func (WindowsCmdTool) Description() string {
-	return "Execute a command or batch script on Windows using PowerShell (preferred) or cmd (fallback). Only works when the agent is running on Windows (runtime.GOOS=windows). Supports dir, ipconfig, tasklist, etc. Runs silently with no console window."
+	return "Execute a command on Windows. Prefer Linux/POSIX-style commands: this tool runs through Git Bash/bash first, then falls back to cmd only if bash is unavailable. Avoid PowerShell/cmd syntax unless native Windows shell behavior is explicitly required. Runs silently with no console window."
 }
 
 // Schema returns the parameter schema.
@@ -35,7 +37,7 @@ func (WindowsCmdTool) Schema() *tool.JSONSchema {
 		Properties: map[string]interface{}{
 			"command": map[string]interface{}{
 				"type":        "string",
-				"description": "Windows command to execute silently in background (no window, no flash). Supports dir, ipconfig, tasklist, etc.",
+				"description": "Command to execute silently. Prefer Git Bash/Linux-style syntax (ls, grep, sed, cat, mkdir -p, etc.); avoid PowerShell/cmd syntax unless required.",
 			},
 			"timeout": map[string]interface{}{
 				"type":        "integer",
@@ -75,24 +77,8 @@ func (t WindowsCmdTool) Execute(ctx context.Context, params map[string]interface
 
 	var stdout, stderr bytes.Buffer
 
-	// Primary: PowerShell with triple hiding mechanism
-	// 1. cmd.exe /c start /b /wait - no new window at cmd level
-	// 2. PowerShell -WindowStyle Hidden - hide at PowerShell level
-	// 3. CreationFlags: CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP | DETACHED_PROCESS (Go syscall level)
-	// This ensures 100% no console window popup
-	cmd := exec.CommandContext(timeoutCtx,
-		"cmd.exe",
-		"/c",
-		"start",
-		"/b",
-		"/wait",
-		"powershell.exe",
-		"-NoProfile",
-		"-NonInteractive",
-		"-ExecutionPolicy", "Bypass",
-		"-WindowStyle", "Hidden",
-		"-Command", cmdStr,
-	)
+	shell, args, shellName := resolvePreferredWindowsShell(cmdStr)
+	cmd := exec.CommandContext(timeoutCtx, shell, args...)
 	applyExecNoWindow(cmd)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -100,29 +86,9 @@ func (t WindowsCmdTool) Execute(ctx context.Context, params map[string]interface
 
 	err := cmd.Run()
 
-	// Fallback 1: If start /b fails to capture output, try direct PowerShell
-	if err == nil && stdout.Len() == 0 && stderr.Len() == 0 {
-		// Retry with direct PowerShell execution (may have brief flash but captures output)
-		stdout.Reset()
-		stderr.Reset()
-		cmd = exec.CommandContext(timeoutCtx,
-			"powershell.exe",
-			"-NoProfile",
-			"-NonInteractive",
-			"-ExecutionPolicy", "Bypass",
-			"-WindowStyle", "Hidden",
-			"-Command", cmdStr,
-		)
-		applyExecNoWindow(cmd)
-		cmd.Stdout = &stdout
-		cmd.Stderr = &stderr
-		cmd.Stdin = nil
-		err = cmd.Run()
-	}
-
-	// Fallback: If PowerShell not found, degrade to cmd
-	// Note: cmd fallback cannot guarantee completely no window due to system limitations
-	if err != nil && isPowershellNotFound(err) {
+	// Fallback: if bash was selected but cannot start, degrade to cmd.
+	// Do not fall back on command exit failures; that would mask shell-incompatible commands.
+	if err != nil && shellName == "bash" && isExecutableNotFound(err) {
 		stdout.Reset()
 		stderr.Reset()
 		cmd = exec.CommandContext(timeoutCtx, "cmd", "/c", cmdStr)
@@ -165,15 +131,88 @@ func (t WindowsCmdTool) Execute(ctx context.Context, params map[string]interface
 	return &tool.ToolResult{Success: true, Output: output}, nil
 }
 
-// isPowershellNotFound checks if the error indicates PowerShell is not available.
+func resolvePreferredWindowsShell(command string) (exe string, argv []string, name string) {
+	if bash := findWindowsBash(); bash != "" {
+		return bash, []string{"-lc", command}, "bash"
+	}
+	return "cmd", []string{"/c", command}, "cmd"
+}
+
+func findWindowsBash() string {
+	for _, p := range commonGitBashPaths() {
+		if st, err := os.Stat(p); err == nil && !st.IsDir() {
+			return p
+		}
+	}
+	if git, err := exec.LookPath("git.exe"); err == nil && git != "" {
+		for _, p := range gitBashPathsFromGit(git) {
+			if st, err := os.Stat(p); err == nil && !st.IsDir() {
+				return p
+			}
+		}
+	}
+	if git, err := exec.LookPath("git"); err == nil && git != "" {
+		for _, p := range gitBashPathsFromGit(git) {
+			if st, err := os.Stat(p); err == nil && !st.IsDir() {
+				return p
+			}
+		}
+	}
+	for _, name := range []string{"bash.exe", "bash"} {
+		if path, err := exec.LookPath(name); err == nil && path != "" && !isWindowsSystemBash(path) {
+			return path
+		}
+	}
+	return ""
+}
+
+func commonGitBashPaths() []string {
+	var paths []string
+	for _, root := range []string{
+		os.Getenv("ProgramFiles"),
+		os.Getenv("ProgramFiles(x86)"),
+		os.Getenv("LocalAppData"),
+	} {
+		root = strings.TrimSpace(root)
+		if root == "" {
+			continue
+		}
+		paths = append(paths, filepath.Join(root, "Git", "bin", "bash.exe"))
+		paths = append(paths, filepath.Join(root, "Git", "usr", "bin", "bash.exe"))
+	}
+	return paths
+}
+
+func gitBashPathsFromGit(gitPath string) []string {
+	gitPath = strings.TrimSpace(gitPath)
+	if gitPath == "" {
+		return nil
+	}
+	dir := filepath.Dir(gitPath)
+	root := filepath.Dir(dir)
+	return []string{
+		filepath.Join(root, "bin", "bash.exe"),
+		filepath.Join(root, "usr", "bin", "bash.exe"),
+	}
+}
+
+func isWindowsSystemBash(path string) bool {
+	p := strings.ToLower(filepath.Clean(strings.TrimSpace(path)))
+	win := strings.ToLower(filepath.Clean(os.Getenv("WINDIR")))
+	if win == "" {
+		win = strings.ToLower(filepath.Clean(`C:\Windows`))
+	}
+	return p == filepath.Join(win, "system32", "bash.exe")
+}
+
+// isExecutableNotFound checks if the error indicates a shell executable is not available.
 // Covers multiple languages and Windows versions.
-func isPowershellNotFound(err error) bool {
+func isExecutableNotFound(err error) bool {
 	if err == nil {
 		return false
 	}
 	msg := strings.ToLower(err.Error())
-	return strings.Contains(msg, "powershell") ||
-		strings.Contains(msg, "not found") ||
+	return strings.Contains(msg, "not found") ||
 		strings.Contains(msg, "no such file") ||
 		strings.Contains(msg, "cannot find") ||
 		strings.Contains(msg, "executable file not found")

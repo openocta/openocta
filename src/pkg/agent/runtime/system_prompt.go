@@ -4,6 +4,7 @@ package runtime
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -97,6 +98,10 @@ func BuildSystemPrompt(opts SystemPromptOptions) (string, error) {
 		b.WriteString("\n")
 	}
 	b.WriteString("除非另有明确说明，请将此目录视为文件操作的唯一全局工作区。\n\n")
+	if runtime.GOOS == "windows" {
+		b.WriteString("## Windows shell policy\n")
+		b.WriteString("Current OS is Windows. For command execution and tool-driven operations, prefer the `bash` tool with Git Bash/Linux-style commands. Avoid direct `cmd.exe`, `cmd`, `powershell.exe`, and PowerShell syntax unless Git Bash is unavailable or the user explicitly asks for native Windows shell behavior. When a command fails because of shell incompatibility, retry by translating it to POSIX/Git Bash syntax instead of looping on cmd or PowerShell variants.\n\n")
+	}
 
 	// Injected markdown (Project Context).
 	if len(files) > 0 {

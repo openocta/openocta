@@ -5,23 +5,41 @@
   flex: 1;
   min-height: 0;
   height: 100%;
+  position: relative;
 }
 
 .chat-main {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  /* Smooth transition when sidebar opens/closes */
-  transition: flex 250ms ease-out;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .chat-sidebar {
-  flex: 1;
-  border-left: 1px solid var(--border);
+  position: fixed;
+  top: calc(var(--shell-topbar-height) + 16px);
+  right: 20px;
+  bottom: 20px;
+  z-index: 70;
+  width: clamp(360px, 32vw, 560px);
+  max-width: calc(100vw - var(--shell-nav-width) - 48px);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow:
+    0 18px 48px color-mix(in srgb, var(--text-primary) 14%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--border) 38%, transparent);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   animation: slide-in 200ms ease-out;
+  background: var(--bg);
+  contain: layout paint;
+}
+
+.shell--nav-collapsed .chat-sidebar,
+.shell--chat-focus .chat-sidebar {
+  max-width: calc(100vw - 48px);
 }
 
 @keyframes slide-in {
@@ -47,20 +65,21 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  min-height: 52px;
+  padding: 0 16px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
-  position: sticky;
-  top: 0;
   z-index: 10;
   background: var(--bg);
 }
 
 /* Smaller close button for sidebar */
 .sidebar-header .btn {
-  padding: 4px 8px;
-  font-size: 14px;
-  min-width: auto;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 8px;
   line-height: 1;
 }
 
@@ -73,6 +92,7 @@
   flex: 1;
   overflow: auto;
   padding: 16px;
+  min-height: 0;
 }
 
 .sidebar-markdown {
@@ -94,22 +114,15 @@
 
 /* Mobile: Full-screen modal */
 @media (max-width: 768px) {
-  .chat-split-container--open {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 1000;
-  }
-
-  .chat-split-container--open .chat-main {
-    display: none; /* Hide chat on mobile when sidebar open */
-  }
-
   .chat-split-container--open .chat-sidebar {
-    width: 100%;
-    min-width: 0;
-    border-left: none;
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    z-index: 1000;
+    width: auto;
+    max-width: none;
+    border-radius: 10px;
   }
 }
