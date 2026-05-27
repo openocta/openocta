@@ -110,17 +110,17 @@ func normalizeProbeNames(raw interface{}) []string {
 func presetProbeNames(preset string) []string {
 	minimal := []string{"curl", "wget", "git", "python3", "python", "bash"}
 	if runtime.GOOS == "windows" {
-		minimal = []string{"curl", "git", "python", "py", "powershell"}
+		minimal = []string{"bash", "git", "curl", "python", "py"}
 	}
 	switch preset {
 	case "dev":
 		if runtime.GOOS == "windows" {
-			return []string{"curl", "git", "python", "py", "node", "npm", "go", "docker"}
+			return []string{"bash", "git", "curl", "python", "py", "node", "npm", "go", "docker"}
 		}
 		return []string{"curl", "wget", "git", "python3", "python", "node", "npm", "go", "docker"}
 	case "load":
 		if runtime.GOOS == "windows" {
-			return []string{"curl", "python", "py", "java", "jmeter", "docker"}
+			return []string{"bash", "curl", "python", "py", "java", "jmeter", "docker"}
 		}
 		return []string{"curl", "wget", "python3", "python", "java", "jmeter", "wrk", "ab", "hey"}
 	default:

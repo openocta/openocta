@@ -283,8 +283,8 @@ export function renderChat(props: ChatProps) {
   const activeSession = props.sessions?.sessions?.find((row) => row.key === props.sessionKey);
   const reasoningLevel = activeSession?.reasoningLevel ?? "off";
   const showReasoning = props.showThinking && reasoningLevel !== "off";
-  const conversationOnly = props.conversationOnly ?? true;
-  const showToolTrace = !conversationOnly;
+  const conversationOnly = false;
+  const showToolTrace = true;
   const assistantIdentity = {
     name: props.assistantName,
     avatar: props.assistantAvatar ?? props.assistantAvatarUrl ?? null,
@@ -299,7 +299,6 @@ export function renderChat(props: ChatProps) {
       : "输入消息（回车发送，Shift+回车换行，可粘贴图片）"
     : "Connect to the gateway to start chatting…";
 
-  const splitRatio = props.splitRatio ?? 0.6;
   const sidebarOpen = Boolean(props.sidebarOpen && props.onCloseSidebar);
   const isEmptyThread =
     !props.loading &&
@@ -359,7 +358,7 @@ export function renderChat(props: ChatProps) {
         (item) => item.key,
         (item) => {
           if (item.kind === "reading-indicator") {
-            return renderReadingIndicatorGroup(assistantIdentity);
+            return renderReadingIndicatorGroup(assistantIdentity, item.startedAt);
           }
 
           if (item.kind === "stream") {
@@ -392,22 +391,7 @@ export function renderChat(props: ChatProps) {
 
   return html`
     <section class="chat ${isEmptyThread ? "chat-empty" : ""} ${props.focusMode ? "chat--focus" : ""}">
-      ${
-        props.onConversationOnlyChange
-          ? html`
-              <button
-                type="button"
-                class="chat-brain-toggle ${showToolTrace ? "chat-brain-toggle--active" : ""}"
-                aria-pressed=${showToolTrace ? "true" : "false"}
-                aria-label=${showToolTrace ? "隐藏工具调用，仅显示对话" : "显示工具调用（输入输出默认折叠）"}
-                title=${showToolTrace ? "仅对话" : "显示工具调用"}
-                @click=${() => props.onConversationOnlyChange?.(!conversationOnly)}
-              >
-                ${icons.brain}
-              </button>
-            `
-          : nothing
-      }
+      ${nothing}
 
       ${props.disabledReason ? html`<div class="callout">${props.disabledReason}</div>` : nothing}
 
@@ -434,20 +418,13 @@ export function renderChat(props: ChatProps) {
       <div
         class="chat-split-container ${sidebarOpen ? "chat-split-container--open" : ""}"
       >
-        <div
-          class="chat-main"
-          style="flex: ${sidebarOpen ? `0 0 ${splitRatio * 100}%` : "1 1 100%"}"
-        >
+        <div class="chat-main">
           ${thread}
         </div>
 
         ${
           sidebarOpen
             ? html`
-              <resizable-divider
-                .splitRatio=${splitRatio}
-                @resize=${(e: CustomEvent) => props.onSplitRatioChange?.(e.detail.splitRatio)}
-              ></resizable-divider>
               <div class="chat-sidebar">
                 ${renderMarkdownSidebar({
                   content: props.sidebarContent ?? null,
@@ -647,7 +624,8 @@ function groupMessages(items: ChatItem[]): Array<ChatItem | MessageGroup> {
     }
 
     const normalized = normalizeMessage(item.message);
-    const role = normalizeRoleForGrouping(normalized.role);
+    const normalizedRole = normalizeRoleForGrouping(normalized.role);
+    const role = normalizedRole === "tool" ? "assistant" : normalizedRole;
     const timestamp = normalized.timestamp || Date.now();
 
     if (!currentGroup || currentGroup.role !== role) {
@@ -677,7 +655,7 @@ function buildChatItems(props: ChatProps): Array<ChatItem | MessageGroup> {
   const items: ChatItem[] = [];
   const history = Array.isArray(props.messages) ? props.messages : [];
   const tools = Array.isArray(props.toolMessages) ? props.toolMessages : [];
-  const conversationOnly = props.conversationOnly ?? true;
+  const conversationOnly = false;
   const historyStart = Math.max(0, history.length - CHAT_HISTORY_LIMIT);
   if (historyStart > 0) {
     items.push({
@@ -724,7 +702,11 @@ function buildChatItems(props: ChatProps): Array<ChatItem | MessageGroup> {
         startedAt: props.streamStartedAt ?? Date.now(),
       });
     } else {
-      items.push({ kind: "reading-indicator", key });
+      items.push({
+        kind: "reading-indicator",
+        key,
+        startedAt: props.streamStartedAt ?? Date.now(),
+      });
     }
   }
 

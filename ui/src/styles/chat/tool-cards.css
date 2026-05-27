@@ -1,15 +1,15 @@
 /* Tool Card Styles */
 .chat-tool-card {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 10px 12px;
-  margin-top: 8px;
-  background: var(--bg-content);
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  border-radius: 8px;
+  padding: 9px 11px;
+  margin-top: 6px;
+  background: color-mix(in srgb, var(--bg) 74%, transparent);
   transition:
     border-color 150ms ease-out,
     background 150ms ease-out;
   /* Fixed max-height to ensure cards don't expand too much */
-  max-height: 120px;
+  max-height: 112px;
   overflow: hidden;
   display: grid;
   gap: 4px;
@@ -17,7 +17,7 @@
 
 .chat-tool-card:hover {
   border-color: var(--border-primary);
-  background: var(--bg);
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
 }
 
 /* First tool card in a group - no top margin */
@@ -26,7 +26,7 @@
 }
 
 :root[data-theme="light"] .chat-tool-card {
-  background: var(--bg);
+  background: #ffffff;
 }
 
 .chat-tool-card--clickable {
@@ -51,7 +51,7 @@
   align-items: center;
   gap: 6px;
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--text-regular);
   line-height: 1.2;
@@ -81,7 +81,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 12px;
+  font-size: 11px;
   color: var(--accent);
   opacity: 0.8;
   transition: opacity 150ms ease-out;
@@ -175,10 +175,10 @@
 .chat-tool-card__preview {
   font-size: 11px;
   color: var(--text-secondary);
-  margin-top: 8px;
-  padding: 8px 10px;
-  background: var(--bg-content);
-  border-radius: var(--radius-md);
+  margin-top: 6px;
+  padding: 7px 9px;
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  border-radius: 7px;
   white-space: pre-wrap;
   overflow: hidden;
   max-height: 44px;
@@ -187,7 +187,7 @@
 }
 
 .chat-tool-card--clickable:hover .chat-tool-card__preview {
-  background: var(--bg);
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent);
   border-color: var(--border-primary);
 }
 

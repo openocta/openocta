@@ -42,7 +42,7 @@ func (t *commandValidatedTool) Execute(ctx context.Context, params map[string]in
 
 // shouldValidateCommandTool reports whether the given tool name should be subject
 // to command string validation. This allows us to extend validation beyond "bash"
-// to other shell-like tools (e.g. PowerShell, cmd) across different platforms.
+// to other shell-like tools across different platforms.
 func shouldValidateCommandTool(name string) bool {
 	n := strings.ToLower(strings.TrimSpace(name))
 	switch n {
@@ -53,6 +53,8 @@ func shouldValidateCommandTool(name string) bool {
 	case "powershell", "pwsh":
 		return true
 	case "cmd":
+		return true
+	case "windows_exec_cmd":
 		return true
 	default:
 		return false

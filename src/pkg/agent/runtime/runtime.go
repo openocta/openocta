@@ -43,6 +43,7 @@ func New(ctx context.Context, opts Options) (*Runtime, error) {
 	if projectRoot == "" {
 		projectRoot = "."
 	}
+	preferGitBashOnWindows()
 
 	// Resolve enableSandbox early so BuiltinTools can use disabled sandbox when config says so.
 	enableSandbox := opts.EnableSandbox
@@ -244,7 +245,7 @@ func New(ctx context.Context, opts Options) (*Runtime, error) {
 				if !ok {
 					return nil
 				}
-				if strings.EqualFold(strings.TrimSpace(call.Name), "bash") {
+				if shouldValidateCommandTool(call.Name) {
 					if cmd, _ := call.Arguments["command"].(string); strings.TrimSpace(cmd) != "" {
 						return ValidateCommandWithConfig(cmd, validatorCfg)
 					}

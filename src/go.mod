@@ -16,7 +16,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/stellarlinkco/agentsdk-go v1.0.0
 	github.com/tencent-connect/botgo v0.2.1
-	github.com/wailsapp/wails/v2 v2.11.0
+	github.com/wailsapp/wails/v2 v2.12.0
 	golang.org/x/oauth2 v0.34.0
 	golang.org/x/sys v0.40.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -24,6 +24,7 @@ require (
 )
 
 require (
+	git.sr.ht/~jackmordaunt/go-toast/v2 v2.0.3 // indirect
 	github.com/RoaringBitmap/roaring/v2 v2.4.5 // indirect
 	github.com/anthropics/anthropic-sdk-go v1.18.0 // indirect
 	github.com/bep/debounce v1.2.1 // indirect

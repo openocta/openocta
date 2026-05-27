@@ -40,6 +40,7 @@ export const BUILTIN_PROVIDERS: BuiltInProvider[] = [
   { id: "vllm", label: "vLLM", envKey: "VLLM_API_KEY", defaultModel: "", baseUrl: "http://127.0.0.1:8000/v1", defaultApi: "openai-completions" },
   { id: "vercel-ai-gateway", label: "Vercel AI Gateway", envKey: "AI_GATEWAY_API_KEY", defaultModel: "", baseUrl: "https://api.vercel.ai/v1", defaultApi: "openai-completions" },
   { id: "bailian", label: "百炼 (阿里云)", envKey: "DASHSCOPE_API_KEY", defaultModel: "qwen3.5-flash", baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1", defaultApi: "openai-completions" },
+  { id: "xunfei", label: "讯飞星火", envKey: "XUNFEI_API_KEY", defaultModel: "spark-lite", baseUrl: "https://spark-api-open.xf-yun.com/v1", defaultApi: "openai-completions" },
 ];
 
 export function parseModelRef(ref: string | null | undefined): { provider: string; modelId: string } | null {

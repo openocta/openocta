@@ -8,11 +8,10 @@
   display: flex;
   flex-direction: column;
   margin: 0 auto;
-  padding: 20px;
-  padding-top: 48px;
+  padding: 24px 32px 18px;
   flex: 1 1 0;
   width: 100%;
-  max-width: 840px;
+  max-width: min(980px, 100%);
   height: 100%;
   min-height: 0; /* Allow flex shrinking */
   overflow: hidden;
@@ -24,8 +23,8 @@
 /* Tool trace toggle (top-right): off = assistant/user only; on = show tools, I/O stays collapsible */
 .chat-brain-toggle {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 18px;
+  right: 24px;
   z-index: 2;
   display: flex;
   align-items: center;
@@ -109,7 +108,8 @@
   flex: 1 1 0; /* Grow, shrink, and use 0 base for proper scrolling */
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 24px;
+  padding: 4px 2px 18px;
   overflow-y: auto;
   overflow-x: hidden;
   min-height: 0; /* Allow shrinking for flex scroll behavior */
@@ -187,7 +187,7 @@
 .chat-msg {
   display: grid;
   gap: 6px;
-  max-width: min(700px, 82%);
+  max-width: min(760px, 88%);
 }
 
 .chat-line.user .chat-msg {
@@ -195,23 +195,25 @@
 }
 
 .chat-line.user .chat-bubble {
-  border-color: transparent;
-  background: var(--accent-subtle);
+  border-color: #86efac;
+  background: #dcfce7;
+  border-radius: 18px 6px 18px 18px;
 }
 
 :root[data-theme="light"] .chat-line.user .chat-bubble {
-  border-color: rgba(234, 88, 12, 0.2);
-  background: rgba(251, 146, 60, 0.12);
+  border-color: #86efac;
+  background: #dcfce7;
 }
 
 .chat-line.assistant .chat-bubble {
-  border-color: transparent;
-  background: var(--bg-content);
+  border-color: #d0d7de;
+  background: #f6f8fa;
+  border-radius: 6px 18px 18px 18px;
 }
 
 :root[data-theme="light"] .chat-line.assistant .chat-bubble {
-  border-color: var(--border);
-  background: var(--bg);
+  border-color: #d0d7de;
+  background: #f6f8fa;
 }
 
 /* Focus mode exit button */
@@ -295,7 +297,7 @@
 
 /* Chat compose - 通义千问风格：一体化大圆角输入框 */
 .chat-compose {
-  margin-top: 8px;
+  margin-top: 4px;
   position: sticky;
   bottom: 0;
   flex-shrink: 0;
@@ -542,7 +544,7 @@
 
 
 :root[data-theme="light"] .chat-compose {
-  background: linear-gradient(to bottom, transparent, var(--bg-content) 20%);
+  background: linear-gradient(to bottom, transparent, var(--bg-content) 24%);
 }
 
 .chat-compose__field {

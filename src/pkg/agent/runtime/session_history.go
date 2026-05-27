@@ -261,20 +261,44 @@ func transcriptMessagesToSDK(msgs []session.TranscriptMessage) []message.Message
 		if role != "user" && role != "assistant" {
 			continue
 		}
-		var b strings.Builder
+		var sdkBlocks []message.ContentBlock
+		hasImage := false
 		for _, c := range m.Content {
 			if strings.EqualFold(c.Type, "text") && c.Text != "" {
-				if b.Len() > 0 {
-					b.WriteByte('\n')
-				}
-				b.WriteString(c.Text)
+				sdkBlocks = append(sdkBlocks, message.ContentBlock{
+					Type: message.ContentBlockType("text"),
+					Text: c.Text,
+				})
+			} else if strings.EqualFold(c.Type, "image") {
+				hasImage = true
+				sdkBlocks = append(sdkBlocks, message.ContentBlock{
+					Type:      message.ContentBlockType("image"),
+					MediaType: c.MimeType,
+					Data:      c.Data,
+				})
 			}
 		}
-		text := strings.TrimSpace(b.String())
-		if text == "" {
+
+		msg := message.Message{Role: role}
+		if hasImage {
+			msg.ContentBlocks = sdkBlocks
+		} else {
+			var b strings.Builder
+			for _, c := range sdkBlocks {
+				if c.Type == message.ContentBlockType("text") && c.Text != "" {
+					if b.Len() > 0 {
+						b.WriteByte('\n')
+					}
+					b.WriteString(c.Text)
+				}
+			}
+			msg.Content = b.String()
+		}
+
+		if msg.Content == "" && len(msg.ContentBlocks) == 0 {
 			continue
 		}
-		out = append(out, message.Message{Role: role, Content: text})
+		out = append(out, msg)
 	}
 	return out
 }

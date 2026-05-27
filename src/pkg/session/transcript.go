@@ -21,14 +21,17 @@ type TranscriptHeader struct {
 
 // TranscriptMessage is a single message in the transcript.
 type TranscriptMessage struct {
-	Role       string         `json:"role"`
-	Content    []ContentBlock `json:"content"`
-	Timestamp  int64          `json:"timestamp"`
-	Usage      *Usage         `json:"usage,omitempty"`
-	StopReason string         `json:"stopReason,omitempty"`
-	Provider   string         `json:"provider,omitempty"`
-	Model      string         `json:"model,omitempty"`
-	DurationMs *int64         `json:"durationMs,omitempty"`
+	Role             string         `json:"role"`
+	Content          []ContentBlock `json:"content"`
+	Timestamp        int64          `json:"timestamp"`
+	Usage            *Usage         `json:"usage,omitempty"`
+	StopReason       string         `json:"stopReason,omitempty"`
+	Provider         string         `json:"provider,omitempty"`
+	Model            string         `json:"model,omitempty"`
+	DurationMs       *int64         `json:"durationMs,omitempty"`
+	FirstTokenMs     *int64         `json:"firstTokenMs,omitempty"`
+	ToolDurationMs   *int64         `json:"toolDurationMs,omitempty"`
+	OutputDurationMs *int64         `json:"outputDurationMs,omitempty"`
 	// ToolResult fields (when role == "toolResult")
 	ToolCallID string `json:"toolCallId,omitempty"`
 	ToolName   string `json:"toolName,omitempty"`
@@ -99,6 +102,11 @@ func AppendUserMessage(transcriptPath string, text string) error {
 	return appendMessage(transcriptPath, "user", text)
 }
 
+// AppendUserMessageWithBlocks appends a user message with additional content blocks (e.g. images) to the transcript.
+func AppendUserMessageWithBlocks(transcriptPath string, text string, extraBlocks []ContentBlock) error {
+	return appendMessageWithBlocks(transcriptPath, "user", text, extraBlocks)
+}
+
 // AppendAssistantMessage appends an assistant message to the transcript.
 func AppendAssistantMessage(transcriptPath string, text string) error {
 	return appendMessage(transcriptPath, "assistant", text)
@@ -106,11 +114,14 @@ func AppendAssistantMessage(transcriptPath string, text string) error {
 
 // AssistantMessageOpts holds optional fields for an assistant message (usage, provider, model, etc.).
 type AssistantMessageOpts struct {
-	Usage      *Usage
-	Provider   string
-	Model      string
-	StopReason string
-	DurationMs *int64
+	Usage            *Usage
+	Provider         string
+	Model            string
+	StopReason       string
+	DurationMs       *int64
+	FirstTokenMs     *int64
+	ToolDurationMs   *int64
+	OutputDurationMs *int64
 }
 
 // AppendAssistantMessageWithUsage appends an assistant message with optional usage, provider, model, stopReason, durationMs.
@@ -135,6 +146,9 @@ func AppendAssistantMessageWithUsage(transcriptPath string, text string, opts *A
 		msg.Model = opts.Model
 		msg.StopReason = opts.StopReason
 		msg.DurationMs = opts.DurationMs
+		msg.FirstTokenMs = opts.FirstTokenMs
+		msg.ToolDurationMs = opts.ToolDurationMs
+		msg.OutputDurationMs = opts.OutputDurationMs
 	}
 	line, _ := json.Marshal(msg)
 	_, err = f.Write(append(line, '\n'))
@@ -153,6 +167,30 @@ func appendMessage(transcriptPath string, role string, text string) error {
 	msg := TranscriptMessage{
 		Role:      role,
 		Content:   []ContentBlock{{Type: "text", Text: text}},
+		Timestamp: time.Now().UnixMilli(),
+	}
+	line, _ := json.Marshal(msg)
+	_, err = f.Write(append(line, '\n'))
+	return err
+}
+
+func appendMessageWithBlocks(transcriptPath string, role string, text string, extraBlocks []ContentBlock) error {
+	if err := os.MkdirAll(filepath.Dir(transcriptPath), 0755); err != nil {
+		return err
+	}
+	f, err := os.OpenFile(transcriptPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	blocks := make([]ContentBlock, 0, 1+len(extraBlocks))
+	if text != "" {
+		blocks = append(blocks, ContentBlock{Type: "text", Text: text})
+	}
+	blocks = append(blocks, extraBlocks...)
+	msg := TranscriptMessage{
+		Role:      role,
+		Content:   blocks,
 		Timestamp: time.Now().UnixMilli(),
 	}
 	line, _ := json.Marshal(msg)
