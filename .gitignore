@@ -27,3 +27,28 @@ ClAUDE.md
 /tmp
 ui/package-lock.json
 ui/package.json
+
+# Runtime and test data
+.state/
+.playwright-mcp/
+src/.playwright-mcp/
+logs/
+*.log
+*.exe
+*.exe.old
+*.exe~
+openocta
+openocta-launcher
+src/openocta_test.exe
+src/build/bin/
+src/build/windows/
+
+# Test artifacts
+weibo_*.json
+weibo_*.png
+weibo_*.md
+
+# IDE
+.vscode/
+*.swp
+*.swo

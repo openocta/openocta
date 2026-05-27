@@ -195,23 +195,25 @@
 }
 
 .chat-line.user .chat-bubble {
-  border-color: transparent;
-  background: color-mix(in srgb, var(--text-primary) 5%, var(--bg));
+  border-color: #86efac;
+  background: #dcfce7;
+  border-radius: 18px 6px 18px 18px;
 }
 
 :root[data-theme="light"] .chat-line.user .chat-bubble {
-  border-color: transparent;
-  background: #f4f4f5;
+  border-color: #86efac;
+  background: #dcfce7;
 }
 
 .chat-line.assistant .chat-bubble {
-  border-color: transparent;
-  background: transparent;
+  border-color: #d0d7de;
+  background: #f6f8fa;
+  border-radius: 6px 18px 18px 18px;
 }
 
 :root[data-theme="light"] .chat-line.assistant .chat-bubble {
-  border-color: transparent;
-  background: transparent;
+  border-color: #d0d7de;
+  background: #f6f8fa;
 }
 
 /* Focus mode exit button */

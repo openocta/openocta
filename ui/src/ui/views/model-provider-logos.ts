@@ -36,7 +36,8 @@ export type ProviderLogoKey =
   | "qwen"
   | "venice"
   | "synthetic"
-  | "opencode";
+  | "opencode"
+  | "xunfei";
 
 function providerLogoUrl(filename: string) {
   return `${import.meta.env.BASE_URL}provider/${filename}`;
@@ -68,6 +69,7 @@ const LOGO_REGISTRY: Record<ProviderLogoKey, string> = {
   venice: providerLogoUrl("venice.png"),
   synthetic: providerLogoUrl("synthetic.png"),
   opencode: providerLogoUrl("opencode.png"),
+  xunfei: providerLogoUrl("xunfei.png"),
 };
 
 // 内置厂商 ID -> LogoKey 映射
@@ -97,6 +99,7 @@ export const BUILTIN_LOGO_KEY_MAP: Record<string, ProviderLogoKey> = {
   venice: "venice",
   synthetic: "synthetic",
   opencode: "opencode",
+  xunfei: "xunfei",
 };
 
 // Hostname 别名 -> LogoKey 映射（用于自定义厂商通过 baseUrl 识别）
@@ -181,6 +184,10 @@ const HOSTNAME_ALIAS_MAP: Record<string, ProviderLogoKey> = {
 
   // OpenCode
   "opencode.ai": "opencode",
+
+  // 讯飞星火
+  "spark-api-open.xf-yun.com": "xunfei",
+  "xf-yun.com": "xunfei",
 };
 
 // ProviderKey / DisplayName 别名 -> LogoKey 映射（用于自定义厂商通过名称识别）
@@ -221,6 +228,8 @@ const NAME_ALIAS_MAP: Record<string, ProviderLogoKey> = {
   aliyun: "bailian",
   xiaomi: "mimo",
   xiaomimimo: "mimo",
+  xunfei: "xunfei",
+  spark: "xunfei",
   qwen: "qwen",
 
   // 中文名称
@@ -233,6 +242,8 @@ const NAME_ALIAS_MAP: Record<string, ProviderLogoKey> = {
   通义: "qwen",
   小米: "mimo",
   mimo: "mimo",
+  讯飞: "xunfei",
+  星火: "xunfei",
 };
 
 /**

@@ -44,6 +44,7 @@ var builtInProviders = map[string]builtInProvider{
 	"ollama":            {"http://127.0.0.1:11434/v1", false, "OLLAMA_API_KEY", "llama3.3"},
 	"vllm":              {"http://127.0.0.1:8000/v1", false, "VLLM_API_KEY", ""},
 	"vercel-ai-gateway": {"https://api.vercel.ai/v1", false, "AI_GATEWAY_API_KEY", ""},
+	"xunfei":            {"https://spark-api-open.xf-yun.com/v1", false, "XUNFEI_API_KEY", "spark-lite"},
 }
 
 // ResolveSessionAgentID resolves agent ID from sessionKey.
@@ -114,6 +115,66 @@ func getEnvVar(cfg *config.OpenOctaConfig, key string, modelRef string) string {
 	return os.Getenv(key)
 }
 
+// CreateXunfeiImageFactory creates an api.ModelFactory for Xunfei's Image Understanding WebSocket API.
+// It resolves credentials from config.Env first, then OS environment variables.
+// Returns nil if credentials (AppID, APIKey, APISecret) are missing.
+func CreateXunfeiImageFactory(cfg *config.OpenOctaConfig) api.ModelFactory {
+	var uiKey string
+	if cfg != nil && cfg.Models != nil && cfg.Models.Providers != nil {
+		if providerCfg, ok := cfg.Models.Providers["xunfei"]; ok {
+			uiKey = resolveProviderAPIKey(cfg, "xunfei", providerCfg.APIKey, "xunfei/spark-lite")
+		}
+	}
+	
+	appID := getEnvVar(cfg, "XUNFEI_APP_ID", "")
+	apiKey := getEnvVar(cfg, "XUNFEI_API_KEY", "")
+	apiSecret := getEnvVar(cfg, "XUNFEI_API_SECRET", "")
+	
+	// If the UI key is provided and contains | or :, parse it
+	if uiKey != "" && appID == "" {
+		parts := strings.Split(uiKey, "|")
+		if len(parts) != 3 {
+			parts = strings.Split(uiKey, ":")
+		}
+		if len(parts) == 3 {
+			appID = strings.TrimSpace(parts[0])
+			apiSecret = strings.TrimSpace(parts[1])
+			apiKey = strings.TrimSpace(parts[2])
+			// Some users might do appId:apiSecret:apiKey or appId:apiKey:apiSecret. We'll assume APPID:APISECRET:APIKEY or APPID|APISECRET|APIKEY based on typical usage, but let's just support both by checking length? Actually, APISecret is usually longer or APIKey is longer. Let's just trust parts 0=AppID, 1=APISecret, 2=APIKey.
+		} else {
+			// If it's a single key (e.g. for v1/chat/completions password), it won't work for the v2.1 image WebSocket API.
+			apiKey = uiKey
+		}
+	}
+
+	if apiKey == "" {
+		apiKey = os.Getenv("XUNFEI_API_KEY")
+	}
+	if apiSecret == "" {
+		apiSecret = os.Getenv("XUNFEI_API_SECRET")
+	}
+	if appID == "" {
+		appID = os.Getenv("XUNFEI_APP_ID")
+	}
+
+	if appID == "" || apiKey == "" || apiSecret == "" {
+		return nil
+	}
+
+	config := XunfeiImageConfig{
+		AppID:       appID,
+		APIKey:      apiKey,
+		APISecret:   apiSecret,
+		Host:        "spark-api.cn-huabei-1.xf-yun.com",
+		Path:        "/v2.1/image",
+		Domain:      "imagev3",
+		Temperature: 0.5,
+		MaxTokens:   2048,
+		TopK:        4,
+	}
+	return &XunfeiImageProvider{Config: config}
+}
+
 // resolveProviderAPIKey returns the API key for a provider from config or env.
 // modelRef is passed to getEnvVar for per-model env override (e.g. "provider/modelId").
 func resolveProviderAPIKey(cfg *config.OpenOctaConfig, provider, apiKeyFromConfig, modelRef string) string {
@@ -134,6 +195,12 @@ func resolveProviderAPIKey(cfg *config.OpenOctaConfig, provider, apiKeyFromConfi
 	}
 	envKey := strings.ToUpper(strings.ReplaceAll(provider, "-", "_")) + "_API_KEY"
 	return getEnvVar(cfg, envKey, modelRef)
+}
+
+// ResolveAgentModelRef returns the primary model reference from agent config or defaults.
+// Exported for use by handlers package (e.g. Xunfei image format detection).
+func ResolveAgentModelRef(cfg *config.OpenOctaConfig, agentID string) string {
+	return resolveAgentModelRef(cfg, agentID)
 }
 
 // resolveAgentModelRef returns the primary model reference from agent config or defaults.

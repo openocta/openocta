@@ -16,7 +16,11 @@ do_embed() {
   ./scripts/set-version.sh
   do_ui
   echo "==> 复制 embed 资源..."
-  cp src/config-schema.json src/openocta.json.example src/.env src/embed/
+  for f in src/config-schema.json src/openocta.json.example src/.env; do
+    if [ -f "$f" ]; then
+      cp "$f" src/embed/
+    fi
+  done
 }
 
 do_go() {

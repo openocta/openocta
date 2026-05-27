@@ -2,6 +2,8 @@
 package runtime
 
 import (
+	"context"
+
 	"github.com/stellarlinkco/agentsdk-go/pkg/tool"
 	toolbuiltin "github.com/stellarlinkco/agentsdk-go/pkg/tool/builtin"
 )
@@ -32,10 +34,42 @@ func BuiltinTools(projectRoot string, sandboxDisabled bool) []tool.Tool {
 
 	return []tool.Tool{
 		bash,
-		read,
-		write,
-		edit,
+		compatTool{read},
+		compatTool{write},
+		compatTool{edit},
 		grep,
 		glob,
 	}
+}
+
+type compatTool struct {
+	tool.Tool
+}
+
+func (c compatTool) Schema() *tool.JSONSchema {
+	orig := c.Tool.Schema()
+	if orig == nil {
+		return nil
+	}
+	props := make(map[string]interface{})
+	for k, v := range orig.Properties {
+		props[k] = v
+	}
+	if fp, ok := props["file_path"]; ok {
+		props["path"] = fp
+	}
+	return &tool.JSONSchema{
+		Type:       orig.Type,
+		Properties: props,
+		Required:   orig.Required,
+	}
+}
+
+func (c compatTool) Execute(ctx context.Context, params map[string]interface{}) (*tool.ToolResult, error) {
+	if params != nil {
+		if path, ok := params["path"]; ok && params["file_path"] == nil {
+			params["file_path"] = path
+		}
+	}
+	return c.Tool.Execute(ctx, params)
 }
