@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"syscall"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
@@ -70,6 +71,12 @@ func findOtherInstancePIDs(skip map[int]struct{}) []int {
 
 func terminatePIDs(pids []int) {
 	for _, pid := range pids {
-		_ = exec.Command("taskkill", "/F", "/PID", strconv.Itoa(pid)).Run()
+		cmd := exec.Command("taskkill", "/F", "/PID", strconv.Itoa(pid))
+		// 静默执行，避免 taskkill 黑框闪烁
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			HideWindow:    true,
+			CreationFlags: 0x08000000 | 0x00040000 | 0x00000008,
+		}
+		_ = cmd.Run()
 	}
 }

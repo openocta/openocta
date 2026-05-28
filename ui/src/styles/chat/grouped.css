@@ -8,6 +8,8 @@
   gap: 10px;
   align-items: flex-start;
   margin-right: 24px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 /* User messages on right */
@@ -23,6 +25,8 @@
   flex-direction: column;
   gap: 2px;
   max-width: 100%;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 /* User messages align content right */
@@ -137,8 +141,9 @@ img.chat-avatar {
     background 150ms ease-out,
     border-color 150ms ease-out,
     box-shadow 150ms ease-out;
-  max-width: 100%;
+  max-width: min(680px, 92%);
   word-wrap: break-word;
+  box-sizing: border-box;
 }
 
 .chat-bubble.has-copy {

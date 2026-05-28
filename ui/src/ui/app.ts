@@ -992,17 +992,26 @@ export class OpenClawApp extends LitElement implements NativeDialogInvoker {
     this.nativePromptInput = value;
   }
 
+  private _maximiseDebounceTimer: number | null = null;
+
   async refreshWindowMaximised() {
     if (!this.isWindowsDesktop) {
       this.isWindowMaximised = false;
       return;
     }
-    try {
-      const maximised = await this.getDesktopRuntime()?.WindowIsMaximised?.();
-      this.isWindowMaximised = Boolean(maximised);
-    } catch {
-      this.isWindowMaximised = false;
+    // 防抖：避免 resize 事件频繁触发导致 UI 持续刷新
+    if (this._maximiseDebounceTimer !== null) {
+      window.clearTimeout(this._maximiseDebounceTimer);
     }
+    this._maximiseDebounceTimer = window.setTimeout(async () => {
+      this._maximiseDebounceTimer = null;
+      try {
+        const maximised = await this.getDesktopRuntime()?.WindowIsMaximised?.();
+        this.isWindowMaximised = Boolean(maximised);
+      } catch {
+        this.isWindowMaximised = false;
+      }
+    }, 120);
   }
 
   handleWindowMinimise() {

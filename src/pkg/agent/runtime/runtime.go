@@ -259,6 +259,10 @@ func New(ctx context.Context, opts Options) (*Runtime, error) {
 		mw = append(mw, approvalQueueMiddleware(approvalQ, approvalBlockWait))
 	}
 
+	// Browser navigation deduplication: prevents LLM from repeatedly opening
+	// the same URL within a short window during multi-step UI automation.
+	mw = append(mw, newBrowserDedupMiddleware(0))
+
 	if opts.TokenTracking {
 		env := opts.Env
 		if env == nil {

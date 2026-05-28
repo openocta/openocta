@@ -9,6 +9,8 @@
   overflow-wrap: break-word;
   word-break: break-word;
   color: var(--text-regular);
+  max-width: 100%;
+  min-width: 0;
 }
 
 .chat-text :where(p, ul, ol, pre, blockquote, table) {
@@ -117,7 +119,10 @@
   margin-top: 0.75em;
   border-collapse: collapse;
   width: 100%;
+  max-width: 100%;
   font-size: 13px;
+  display: block;
+  overflow-x: auto;
 }
 
 .chat-text :where(th, td) {

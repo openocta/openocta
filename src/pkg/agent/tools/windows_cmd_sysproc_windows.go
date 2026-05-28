@@ -12,9 +12,12 @@ func applyExecNoWindow(cmd *exec.Cmd) {
 		return
 	}
 
-	// 这是 Windows 下**彻底静默无窗口**的终极组合
+	// Windows 下彻底静默无窗口执行：
+	// CREATE_NO_WINDOW (0x08000000) — 不为子进程创建新的控制台窗口
+	// CREATE_UNICODE_ENVIRONMENT (0x00040000) — 使用 Unicode 环境块
+	// DETACHED_PROCESS (0x00000008) — 脱离父进程控制台
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		HideWindow:    true,
-		CreationFlags: 0x08000000 | 0x20000000 | 0x00000008,
+		CreationFlags: 0x08000000,
 	}
 }

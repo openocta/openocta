@@ -40,12 +40,21 @@ func TestDecodeSessionHistoryWrapped(t *testing.T) {
 func TestTranscriptMessagesToSDK(t *testing.T) {
 	in := []session.TranscriptMessage{
 		{Role: "user", Content: []session.ContentBlock{{Type: "text", Text: "u1"}}},
-		{Role: "toolResult", Content: []session.ContentBlock{{Type: "text", Text: "x"}}},
+		{Role: "toolResult", ToolCallID: "tc1", ToolName: "bash", Content: []session.ContentBlock{{Type: "text", Text: "x"}}},
 		{Role: "assistant", Content: []session.ContentBlock{{Type: "text", Text: "a1"}}},
 	}
 	got := transcriptMessagesToSDK(in)
-	if len(got) != 2 || got[0].Content != "u1" || got[1].Role != "assistant" {
-		t.Fatalf("got %+v", got)
+	if len(got) != 3 {
+		t.Fatalf("expected 3 messages, got %d", len(got))
+	}
+	if got[0].Content != "u1" || got[0].Role != "user" {
+		t.Fatalf("expected user message with content u1, got %+v", got[0])
+	}
+	if got[1].Role != "assistant" || len(got[1].ToolCalls) != 1 || got[1].ToolCalls[0].Name != "bash" || got[1].ToolCalls[0].Result != "x" {
+		t.Fatalf("expected assistant message with tool call, got %+v", got[1])
+	}
+	if got[2].Role != "assistant" || got[2].Content != "a1" {
+		t.Fatalf("expected assistant message with content a1, got %+v", got[2])
 	}
 }
 

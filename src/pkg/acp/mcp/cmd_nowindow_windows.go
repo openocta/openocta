@@ -7,8 +7,11 @@ import (
 	"syscall"
 )
 
-// CREATE_NO_WINDOW — 控制台子进程不分配/显示新控制台窗口（避免从 GUI 启动时闪黑框）。
-const creationFlagsNoWindow = 0x08000000
+// Windows 下 MCP 子进程静默执行标志：
+// CREATE_NO_WINDOW (0x08000000) — 不为子进程创建新的控制台窗口
+// CREATE_UNICODE_ENVIRONMENT (0x00040000) — 使用 Unicode 环境块
+// DETACHED_PROCESS (0x00000008) — 脱离父进程控制台，彻底避免黑框
+const creationFlagsNoWindow = 0x08000000 | 0x00040000 | 0x00000008
 
 func configureMCPCommand(cmd *exec.Cmd) {
 	if cmd == nil {

@@ -84,6 +84,7 @@ func getOsVersionDetail() string {
 
 	var out bytes.Buffer
 	cmd := exec.Command(name, args...)
+	applyExecNoWindow(cmd)
 	cmd.Stdout = &out
 	cmd.Stderr = &out
 	if err := cmd.Run(); err != nil {

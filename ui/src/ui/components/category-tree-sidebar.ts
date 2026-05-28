@@ -23,6 +23,7 @@ export class CategoryTreeSidebar extends LitElement {
   @state() private expandedIds = new Set<string | number>();
   @state() private loading = false;
   @state() private error = "";
+  private _lastReloadVersion = 0;
 
   static styles = css`
     :host {
@@ -107,7 +108,11 @@ export class CategoryTreeSidebar extends LitElement {
 
   updated(changedProperties: Map<string, unknown>) {
     if (changedProperties.has("reloadVersion") && this.reloadVersion > 0) {
-      this.loadCategories();
+      // 去重：相同 reloadVersion 不重复加载，避免数据未变时持续刷新
+      if (this.reloadVersion !== this._lastReloadVersion) {
+        this._lastReloadVersion = this.reloadVersion;
+        this.loadCategories();
+      }
     }
   }
 

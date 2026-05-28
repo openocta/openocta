@@ -171,6 +171,7 @@ func tryVersionLines(ctx context.Context, resolvedPath, displayName string) stri
 
 func runCmd(ctx context.Context, path string, args []string) string {
 	cmd := exec.CommandContext(ctx, path, args...)
+	applyExecNoWindow(cmd)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -184,6 +185,7 @@ func runCmd(ctx context.Context, path string, args []string) string {
 
 func runCmdCombined(ctx context.Context, path string, args []string) string {
 	cmd := exec.CommandContext(ctx, path, args...)
+	applyExecNoWindow(cmd)
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf

@@ -187,7 +187,7 @@
 .chat-msg {
   display: grid;
   gap: 6px;
-  max-width: min(760px, 88%);
+  max-width: min(680px, 92%);
 }
 
 .chat-line.user .chat-msg {

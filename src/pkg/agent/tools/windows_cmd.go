@@ -4,9 +4,7 @@ package tools
 import (
 	"bytes"
 	"context"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -14,7 +12,8 @@ import (
 	"github.com/stellarlinkco/agentsdk-go/pkg/tool"
 )
 
-// WindowsCmdTool executes shell commands on Windows via Git Bash/bash (preferred) or native shells (fallback).
+// WindowsCmdTool executes shell commands on Windows via PowerShell (preferred)
+// or cmd (fallback). PowerShell provides broad cross-platform command compatibility.
 // Only available when the agent runs on Windows.
 type WindowsCmdTool struct {
 	Timeout time.Duration // Optional: command timeout, defaults to 60s
@@ -27,7 +26,7 @@ func (WindowsCmdTool) Name() string {
 
 // Description returns the tool description.
 func (WindowsCmdTool) Description() string {
-	return "Execute a command on Windows. Prefer Linux/POSIX-style commands: this tool runs through Git Bash/bash first, then falls back to cmd only if bash is unavailable. Avoid PowerShell/cmd syntax unless native Windows shell behavior is explicitly required. Runs silently with no console window."
+	return "Execute a command on Windows. Uses PowerShell by default for maximum compatibility with both Windows-native and Unix-style commands. Falls back to cmd if PowerShell is unavailable. Runs silently with no console window."
 }
 
 // Schema returns the parameter schema.
@@ -37,7 +36,7 @@ func (WindowsCmdTool) Schema() *tool.JSONSchema {
 		Properties: map[string]interface{}{
 			"command": map[string]interface{}{
 				"type":        "string",
-				"description": "Command to execute silently. Prefer Git Bash/Linux-style syntax (ls, grep, sed, cat, mkdir -p, etc.); avoid PowerShell/cmd syntax unless required.",
+				"description": "Command to execute silently. PowerShell supports most common Unix-style aliases (ls, cat, ps, curl, ssh, etc.) as well as native Windows commands.",
 			},
 			"timeout": map[string]interface{}{
 				"type":        "integer",
@@ -86,9 +85,9 @@ func (t WindowsCmdTool) Execute(ctx context.Context, params map[string]interface
 
 	err := cmd.Run()
 
-	// Fallback: if bash was selected but cannot start, degrade to cmd.
+	// Fallback: if PowerShell was selected but cannot start, degrade to cmd.
 	// Do not fall back on command exit failures; that would mask shell-incompatible commands.
-	if err != nil && shellName == "bash" && isExecutableNotFound(err) {
+	if err != nil && shellName == "powershell" && isExecutableNotFound(err) {
 		stdout.Reset()
 		stderr.Reset()
 		cmd = exec.CommandContext(timeoutCtx, "cmd", "/c", cmdStr)
@@ -132,77 +131,22 @@ func (t WindowsCmdTool) Execute(ctx context.Context, params map[string]interface
 }
 
 func resolvePreferredWindowsShell(command string) (exe string, argv []string, name string) {
-	if bash := findWindowsBash(); bash != "" {
-		return bash, []string{"-lc", command}, "bash"
+	// 优先使用 PowerShell（Windows 内置，兼容大多数 Unix 命令别名）
+	if ps := findPowerShell(); ps != "" {
+		return ps, []string{"-NoProfile", "-Command", command}, "powershell"
 	}
+	// 回退到 cmd
 	return "cmd", []string{"/c", command}, "cmd"
 }
 
-func findWindowsBash() string {
-	for _, p := range commonGitBashPaths() {
-		if st, err := os.Stat(p); err == nil && !st.IsDir() {
-			return p
-		}
-	}
-	if git, err := exec.LookPath("git.exe"); err == nil && git != "" {
-		for _, p := range gitBashPathsFromGit(git) {
-			if st, err := os.Stat(p); err == nil && !st.IsDir() {
-				return p
-			}
-		}
-	}
-	if git, err := exec.LookPath("git"); err == nil && git != "" {
-		for _, p := range gitBashPathsFromGit(git) {
-			if st, err := os.Stat(p); err == nil && !st.IsDir() {
-				return p
-			}
-		}
-	}
-	for _, name := range []string{"bash.exe", "bash"} {
-		if path, err := exec.LookPath(name); err == nil && path != "" && !isWindowsSystemBash(path) {
+// findPowerShell 查找 Windows PowerShell 或 PowerShell Core
+func findPowerShell() string {
+	for _, name := range []string{"powershell.exe", "pwsh.exe", "powershell", "pwsh"} {
+		if path, err := exec.LookPath(name); err == nil && path != "" {
 			return path
 		}
 	}
 	return ""
-}
-
-func commonGitBashPaths() []string {
-	var paths []string
-	for _, root := range []string{
-		os.Getenv("ProgramFiles"),
-		os.Getenv("ProgramFiles(x86)"),
-		os.Getenv("LocalAppData"),
-	} {
-		root = strings.TrimSpace(root)
-		if root == "" {
-			continue
-		}
-		paths = append(paths, filepath.Join(root, "Git", "bin", "bash.exe"))
-		paths = append(paths, filepath.Join(root, "Git", "usr", "bin", "bash.exe"))
-	}
-	return paths
-}
-
-func gitBashPathsFromGit(gitPath string) []string {
-	gitPath = strings.TrimSpace(gitPath)
-	if gitPath == "" {
-		return nil
-	}
-	dir := filepath.Dir(gitPath)
-	root := filepath.Dir(dir)
-	return []string{
-		filepath.Join(root, "bin", "bash.exe"),
-		filepath.Join(root, "usr", "bin", "bash.exe"),
-	}
-}
-
-func isWindowsSystemBash(path string) bool {
-	p := strings.ToLower(filepath.Clean(strings.TrimSpace(path)))
-	win := strings.ToLower(filepath.Clean(os.Getenv("WINDIR")))
-	if win == "" {
-		win = strings.ToLower(filepath.Clean(`C:\Windows`))
-	}
-	return p == filepath.Join(win, "system32", "bash.exe")
 }
 
 // isExecutableNotFound checks if the error indicates a shell executable is not available.

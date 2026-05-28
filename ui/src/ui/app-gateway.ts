@@ -216,10 +216,15 @@ function handleGatewayEventUnsafe(host: GatewayHost, evt: GatewayEventFrame) {
     if (host.onboarding) {
       return;
     }
+    const agentPayload = evt.payload as AgentEventPayload | undefined;
     handleAgentEvent(
       host as unknown as Parameters<typeof handleAgentEvent>[0],
-      evt.payload as AgentEventPayload | undefined,
+      agentPayload,
     );
+    // 工具开始执行时清掉上一轮残留的流式文本，避免旧内容一直显示
+    if (agentPayload?.stream === "tool" && agentPayload?.data?.phase === "start") {
+      (host as unknown as { chatStream: string | null }).chatStream = null;
+    }
     return;
   }
 

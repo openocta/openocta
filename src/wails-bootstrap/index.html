@@ -2,18 +2,56 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="refresh" content="0;url=http://127.0.0.1:18900?_shell=d">
   <title>OpenOcta</title>
   <style>
-    body { font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-    .loading { text-align: center; color: #666; }
+    body { font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #1a1a2e; }
+    .loading { text-align: center; color: #888; }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid #333;
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
   <div class="loading">
+    <div class="spinner"></div>
     <p>正在启动 OpenOcta...</p>
-    <p>若未自动跳转，请访问 <a href="http://127.0.0.1:18900?_shell=d">http://127.0.0.1:18900?_shell=d</a></p>
   </div>
-  <script>window.location.href = 'http://127.0.0.1:18900?_shell=d';</script>
+  <script>
+    (function() {
+      var url = 'http://127.0.0.1:18900?_shell=d';
+      var maxAttempts = 60;
+      var attempt = 0;
+      function tryNavigate() {
+        attempt++;
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.onreadystatechange = function() {
+          if (xhr.readyState === 4) {
+            if (xhr.status >= 200 && xhr.status < 400) {
+              window.location.replace(url);
+            } else if (attempt < maxAttempts) {
+              setTimeout(tryNavigate, 500);
+            } else {
+              document.querySelector('.loading').innerHTML =
+                '<p style="color:#e74c3c">启动超时，请访问 <a href="' + url + '" style="color:#6366f1">' + url + '</a></p>';
+            }
+          }
+        };
+        xhr.onerror = function() {
+          if (attempt < maxAttempts) {
+            setTimeout(tryNavigate, 500);
+          }
+        };
+        xhr.send();
+      }
+      tryNavigate();
+    })();
+  </script>
 </body>
 </html>

@@ -2,7 +2,7 @@ import { truncateText } from "./format.ts";
 import { gatewaySessionKeysEqual } from "./sessions/session-key-utils.js";
 
 const TOOL_STREAM_LIMIT = 50;
-const TOOL_STREAM_THROTTLE_MS = 80;
+const TOOL_STREAM_THROTTLE_MS = 300;
 const TOOL_OUTPUT_CHAR_LIMIT = 120_000;
 
 export type AgentEventPayload = {

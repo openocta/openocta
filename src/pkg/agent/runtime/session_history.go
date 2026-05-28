@@ -258,6 +258,25 @@ func transcriptMessagesToSDK(msgs []session.TranscriptMessage) []message.Message
 	var out []message.Message
 	for _, m := range msgs {
 		role := strings.ToLower(strings.TrimSpace(m.Role))
+		if role == "toolresult" {
+			// Convert toolResult to a tool-role message with the result content.
+			// Kimi API requires: assistant message with tool_calls must be followed
+			// by tool messages responding to each tool_call_id.
+			var resultText string
+			for _, c := range m.Content {
+				if strings.EqualFold(c.Type, "text") {
+					resultText = c.Text
+					break
+				}
+			}
+			msg := message.Message{
+				Role:       "tool",
+				ToolCallID: m.ToolCallID,
+				Content:    resultText,
+			}
+			out = append(out, msg)
+			continue
+		}
 		if role != "user" && role != "assistant" {
 			continue
 		}
@@ -295,7 +314,7 @@ func transcriptMessagesToSDK(msgs []session.TranscriptMessage) []message.Message
 			msg.Content = b.String()
 		}
 
-		if msg.Content == "" && len(msg.ContentBlocks) == 0 {
+		if msg.Content == "" && len(msg.ContentBlocks) == 0 && len(msg.ToolCalls) == 0 {
 			continue
 		}
 		out = append(out, msg)

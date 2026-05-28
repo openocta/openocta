@@ -1755,27 +1755,30 @@ func ChatSendHandler(opts HandlerOpts) error {
 						if err := session.AppendTranscriptLine(transcriptPath, line); err != nil {
 							chatLog.Warn("append assistant message to transcript failed path=%s err=%v", transcriptPath, err)
 						}
-						messageBody := map[string]interface{}{
-							"role":             "assistant",
-							"content":          contentSnapshot,
-							"timestamp":        tsMs,
-							"durationMs":       durationMs,
-							"firstTokenMs":     currentFirstTokenMs,
-							"toolDurationMs":   totalToolDurationMs,
-							"outputDurationMs": currentOutputMs,
-						}
+					messageBody := map[string]interface{}{
+						"role":             "assistant",
+						"content":          contentSnapshot,
+						"timestamp":        tsMs,
+						"durationMs":       durationMs,
+						"firstTokenMs":     currentFirstTokenMs,
+						"toolDurationMs":   totalToolDurationMs,
+						"outputDurationMs": currentOutputMs,
+					}
+					// 只在真正结束时广播 final；工具调用轮次不广播，避免前端反复刷新
+					if stopReason != "tool_use" {
 						broadcastChatFinal(ctxForBroadcast, runId, sessionKey, messageBody)
-						if t := extractAssistantTextForIMDelivery(messageBody); t != "" {
+					}
+					if t := extractAssistantTextForIMDelivery(messageBody); t != "" {
 							streamIMPlain = t
 							lastAssistantContent = t
 						}
 						// Reset accumulators so next EventMessageStop (if any) does not include this turn's content
 						assistantContent = nil
 						textBuf.Reset()
-					} else if usageSnapshot != nil {
-						broadcastChatFinal(ctxForBroadcast, runId, sessionKey, map[string]interface{}{
-							"role": "assistant", "content": []map[string]interface{}{}, "timestamp": time.Now().UnixMilli(),
-						})
+				} else if usageSnapshot != nil && stopReason != "tool_use" {
+					broadcastChatFinal(ctxForBroadcast, runId, sessionKey, map[string]interface{}{
+						"role": "assistant", "content": []map[string]interface{}{}, "timestamp": time.Now().UnixMilli(),
+					})
 					}
 				case api.EventError:
 					outMsg := ""

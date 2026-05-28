@@ -98,6 +98,14 @@ func BuildSystemPrompt(opts SystemPromptOptions) (string, error) {
 		b.WriteString("\n")
 	}
 	b.WriteString("除非另有明确说明，请将此目录视为文件操作的唯一全局工作区。\n\n")
+
+	b.WriteString("## 浏览器自动化规则\n")
+	b.WriteString("当使用浏览器相关工具（如 playwright、browser、web 自动化等）时，严格遵守以下规则：\n\n")
+	b.WriteString("1. **状态感知**: 浏览器是有状态的。一旦通过 navigate/open 打开了某个页面，该页面会保持打开状态，后续操作应直接在当前页面上执行，不要重复打开同一 URL。\n")
+	b.WriteString("2. **避免重复导航**: 在执行多步骤 UI 用例时，只在第一步调用 navigate/open 打开目标页面。后续步骤（点击、输入、选择等）直接使用当前页面，严禁在每一步都重新导航。\n")
+	b.WriteString("3. **检查当前状态**: 如果你不确定当前页面状态，优先使用 screenshot 或 page_content 等工具检查当前页面，而不是直接重新导航。\n")
+	b.WriteString("4. **单页复用**: 同一个用例中的所有操作应在同一个页面上下文内完成，除非用例明确要求切换页面或打开新标签页。\n")
+	b.WriteString("5. **错误恢复**: 只有在确认当前页面已关闭、跳转失败或需要切换到完全不同 URL 时，才再次调用 navigate/open。\n\n")
 	if runtime.GOOS == "windows" {
 		b.WriteString("## Windows shell policy\n")
 		b.WriteString("Current OS is Windows. For command execution and tool-driven operations, prefer the `bash` tool with Git Bash/Linux-style commands. Avoid direct `cmd.exe`, `cmd`, `powershell.exe`, and PowerShell syntax unless Git Bash is unavailable or the user explicitly asks for native Windows shell behavior. When a command fails because of shell incompatibility, retry by translating it to POSIX/Git Bash syntax instead of looping on cmd or PowerShell variants.\n\n")

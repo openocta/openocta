@@ -609,7 +609,7 @@ export function renderChat(props: ChatProps) {
   `;
 }
 
-function groupMessages(items: ChatItem[]): Array<ChatItem | MessageGroup> {
+function groupMessages(items: ChatItem[], hasActiveRun = false, hasStream = false): Array<ChatItem | MessageGroup> {
   const result: Array<ChatItem | MessageGroup> = [];
   let currentGroup: MessageGroup | null = null;
 
@@ -648,6 +648,26 @@ function groupMessages(items: ChatItem[]): Array<ChatItem | MessageGroup> {
   if (currentGroup) {
     result.push(currentGroup);
   }
+
+  // Mark the last assistant group as streaming when a run is active
+  // or when stream content is still being rendered.
+  // Only the most recent assistant group should be marked streaming;
+  // historical groups remain collapsed so earlier unfinished turns
+  // don't forcibly expand their process details on new user messages.
+  if (hasActiveRun || hasStream) {
+    let foundLastAssistant = false;
+    for (let i = result.length - 1; i >= 0; i--) {
+      const g = result[i];
+      if (g && typeof g === "object" && "role" in g && g.role === "assistant") {
+        if (!foundLastAssistant) {
+          g.isStreaming = true;
+          foundLastAssistant = true;
+        }
+        break;
+      }
+    }
+  }
+
   return result;
 }
 
@@ -710,7 +730,7 @@ function buildChatItems(props: ChatProps): Array<ChatItem | MessageGroup> {
     }
   }
 
-  return groupMessages(items);
+  return groupMessages(items, Boolean(props.canAbort), props.stream !== null);
 }
 
 function messageKey(message: unknown, index: number): string {

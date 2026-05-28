@@ -221,10 +221,11 @@ export function renderMessageGroup(
   const thinkingLabel = metrics.thinkingMs ? formatDurationShort(metrics.thinkingMs) : "";
   
   let detailedLabel = "";
-  if (metrics.elapsedMs) {
+  // Only show duration stats when streaming is complete (all tool results returned)
+  if (metrics.elapsedMs && !group.isStreaming) {
     let mainLabel = `总耗时 ${durationLabel}`;
     const detailParts: string[] = [];
-    
+
     // Calculate firstTokenToOutputMs (首token到结果输出)
     if (metrics.firstTokenMs !== null) {
       const firstTokenToOutputVal = metrics.elapsedMs - (metrics.toolDurationMs ?? 0) - metrics.firstTokenMs;
@@ -232,15 +233,15 @@ export function renderMessageGroup(
         detailParts.push(`首token到结果输出 ${formatDurationShort(firstTokenToOutputVal)}`);
       }
     }
-    
+
     if (metrics.toolDurationMs !== null && metrics.toolDurationMs > 0) {
       detailParts.push(`tool工具 ${formatDurationShort(metrics.toolDurationMs)}`);
     }
-    
+
     if (metrics.outputDurationMs !== null && metrics.outputDurationMs > 0) {
       detailParts.push(`输出 ${formatDurationShort(metrics.outputDurationMs)}`);
     }
-    
+
     if (detailParts.length > 0) {
       detailedLabel = `${mainLabel} (${detailParts.join(" · ")})`;
     } else {
@@ -248,10 +249,12 @@ export function renderMessageGroup(
     }
   }
 
-  const footerMsLabel = [
-    thinkingLabel ? `思考 ${thinkingLabel}` : "",
-    detailedLabel
-  ].filter(Boolean).join(" · ");
+  const footerMsLabel = group.isStreaming
+    ? html`<thinking-timer .start=${group.timestamp}></thinking-timer>`
+    : [
+        thinkingLabel ? `思考 ${thinkingLabel}` : "",
+        detailedLabel
+      ].filter(Boolean).join(" · ");
 
   return html`
     <div class="chat-group ${roleClass}">
@@ -794,7 +797,7 @@ function renderAssistantTurnMessages(
             <summary class="chat-process-summary">
               <span class="chat-process-summary__icon">${icons.wrench}</span>
               <span class="chat-process-summary__title">思考及工具运行过程</span>
-              ${elapsedLabel ? html`<span class="chat-process-summary__duration">总耗时 ${elapsedLabel}</span>` : nothing}
+              ${elapsedLabel && !group.isStreaming ? html`<span class="chat-process-summary__duration">总耗时 ${elapsedLabel}</span>` : nothing}
               <span class="chat-process-summary__chevron">${icons.chevronRight}</span>
             </summary>
             <div class="chat-process-content">

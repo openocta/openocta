@@ -1,5 +1,5 @@
 /** Distance (px) from the bottom within which we consider the user "near bottom". */
-const NEAR_BOTTOM_THRESHOLD = 450;
+const NEAR_BOTTOM_THRESHOLD = 120;
 
 type ScrollHost = {
   updateComplete: Promise<unknown>;

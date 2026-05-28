@@ -189,9 +189,10 @@ func NewServer(addr string, version string) *Server {
 			})
 		},
 		NodeSendToSession: func(sessionKey string, event string, payload interface{}) {
-			// TODO: Implement node subscription and forwarding
-			// For now, just broadcast to all clients
-			hub.Broadcast(event, payload, nil)
+			// TODO: Implement node subscription and forwarding.
+			// For now this is a no-op: broadcast functions already send to all
+			// connected clients via ctx.Broadcast. Re-broadcasting here would
+			// duplicate events and cause seq gaps on the frontend.
 		},
 		//MCPTools: func(ctx context.Context) ([]tool.Tool, error) {
 		//	if mcpManager == nil {
