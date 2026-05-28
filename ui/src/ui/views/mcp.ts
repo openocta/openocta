@@ -157,9 +157,7 @@ export function renderFieldLabelWithTooltip(label: string, tooltipText: string) 
       ${label}
       <span class="mcp-field-hint" @mouseenter=${showMcpTooltip} @mouseleave=${hideMcpTooltip}>
         ${icons.info}
-        <span class="mcp-field-hint__tooltip" @mouseenter=${showMcpTooltip} @mouseleave=${hideMcpTooltip}>
-          ${tooltipText}
-        </span>
+        <span class="mcp-field-hint__tooltip" @mouseenter=${showMcpTooltip} @mouseleave=${hideMcpTooltip}>${tooltipText}</span>
       </span>
     </span>
   `;
