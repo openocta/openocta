@@ -1148,6 +1148,7 @@ type NodeHostBrowserProxyConfig struct {
 // ToolsConfig holds tools settings.
 type ToolsConfig struct {
 	Profile      *string                     `json:"profile,omitempty"` // "minimal" | "coding" | "messaging" | "full"
+	SkillsOnly   *bool                       `json:"skillsOnly,omitempty"`   // restricts agent to only skill-defined tools
 	Allow        []string                    `json:"allow,omitempty"`
 	AlsoAllow    []string                    `json:"alsoAllow,omitempty"`
 	Deny         []string                    `json:"deny,omitempty"`

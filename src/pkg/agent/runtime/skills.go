@@ -296,6 +296,9 @@ func entryToDefinitionMetadata(e agentSkills.Entry) map[string]string {
 		if v, ok := e.Frontmatter["homepage"]; ok && v != "" {
 			m["homepage"] = v
 		}
+		if v, ok := e.Frontmatter["allowed-tools"]; ok && v != "" {
+			m["allowed-tools"] = v
+		}
 	}
 	return m
 }
