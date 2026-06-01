@@ -16,6 +16,8 @@
   "assetdir": "wails-bootstrap",
   "build:dir": "build",
   "preBuildHooks": {
-    "*/*": "cmd.exe /c echo skip"
+    "darwin/*": "echo skip",
+    "linux/*": "echo skip",
+    "windows/*": "cmd.exe /c echo skip"
   }
 }
