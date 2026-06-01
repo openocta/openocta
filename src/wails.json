@@ -10,8 +10,6 @@
     "copyright": "OpenOcta - GPLv3. 本仓库遵循 GPLv3 开源限制。",
     "comments": "OpenOcta Desktop - Built with Wails"
   },
-  "frontend:install": "cmd.exe /c echo skip",
-  "frontend:build": "cmd.exe /c echo skip",
   "frontend:dir": "wails-bootstrap",
   "assetdir": "wails-bootstrap",
   "build:dir": "build",
