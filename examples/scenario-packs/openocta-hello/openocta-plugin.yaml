@@ -1,0 +1,21 @@
+apiVersion: openocta.dev/v1
+kind: ScenarioPack
+id: openocta-hello
+version: "0.1.0"
+displayName: OpenOcta Hello
+description: 最小场景包，用于验证安装与工作区 iframe。
+publisher: openocta
+
+compatibility:
+  os: [darwin, linux, windows]
+  arch: [amd64, arm64]
+
+configDefaults:
+  greeting: "Hello from scenario pack"
+
+views:
+  - id: main
+    label: 主视图
+    path: index.html
+    type: iframe
+    default: true

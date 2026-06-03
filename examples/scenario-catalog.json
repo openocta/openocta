@@ -1,0 +1,18 @@
+{
+  "items": [
+    {
+      "id": "openocta-hello",
+      "name": "OpenOcta Hello",
+      "description": "最小场景包示例，用于冒烟测试",
+      "version": "0.1.0",
+      "publisher": "openocta"
+    },
+    {
+      "id": "openocta-db",
+      "name": "OpenOcta DB",
+      "description": "数据库场景示例包（remote 依赖 + setup stub）",
+      "version": "0.1.0",
+      "publisher": "openocta"
+    }
+  ]
+}

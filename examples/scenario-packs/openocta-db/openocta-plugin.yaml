@@ -1,0 +1,33 @@
+apiVersion: openocta.dev/v1
+kind: ScenarioPack
+id: openocta-db
+version: "0.1.0"
+displayName: OpenOcta DB
+description: 数据库运维场景示例（含 setup stub）。
+publisher: openocta
+
+compatibility:
+  os: [darwin, linux]
+  arch: [amd64, arm64]
+
+configDefaults:
+  database:
+    host: "127.0.0.1"
+    port: 3306
+
+remote:
+  skills: []
+  employees: []
+  mcps: []
+
+setup:
+  - id: mysql_client
+    script: install_mysql_client.py
+    platforms: [darwin, linux]
+
+views:
+  - id: main
+    label: 数据库控制台
+    path: index.html
+    type: iframe
+    default: true
