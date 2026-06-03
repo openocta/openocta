@@ -493,7 +493,7 @@ MiniMax 提供 Anthropic Messages API 兼容端点，默认模型为最新的 `M
 | 模型 | 说明 |
 |------|------|
 | `MiniMax-M3` | 最新旗舰模型 |
-| `MiniMax-M2.7` | 上一代旗舰模型，1M context |
+| `MiniMax-M2.7` | 上一代旗舰模型，192K context |
 | `MiniMax-M2.7-highspeed` | 上一代高速推理版本 |
 
 ```json
