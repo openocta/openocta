@@ -47,7 +47,7 @@
 | **qianfan**     | `QIANFAN_API_KEY`   | deepseek-v3-2-251201         | https://qianfan.baidubce.com/v2 | OpenAI |
 | **huggingface** | `HUGGINGFACE_HUB_TOKEN` | (需指定) | https://router.huggingface.co/v1 | OpenAI |
 | **xiaomi**      | `XIAOMI_API_KEY`    | mimo-v2-flash               | https://api.xiaomimimo.com/anthropic | Anthropic |
-| **minimax**     | `MINIMAX_API_KEY`   | MiniMax-M2.7                | https://api.minimax.io/anthropic | Anthropic |
+| **minimax**     | `MINIMAX_API_KEY`   | MiniMax-M3                  | https://api.minimax.io/anthropic | Anthropic |
 | **mistral**     | `MISTRAL_API_KEY`   | mistral-large-latest        | https://api.mistral.ai/v1 | OpenAI |
 | **groq**        | `GROQ_API_KEY`      | llama-3.3-70b-versatile     | https://api.groq.com/openai/v1 | OpenAI |
 | **cerebras**    | `CEREBRAS_API_KEY`  | llama-4-scout-17b-16e-instruct | https://api.cerebras.ai/v1 | OpenAI |
@@ -488,14 +488,13 @@ NEAR AI Cloud 提供 OpenAI 兼容端点，并支持 TEE 推理模型。默认�
 
 ### MiniMax
 
-MiniMax 提供 Anthropic Messages API 兼容端点，默认模型为最新的 `MiniMax-M2.7`（1M context）。可用模型：
+MiniMax 提供 Anthropic Messages API 兼容端点，默认模型为最新的 `MiniMax-M3`。可用模型：
 
 | 模型 | 说明 |
 |------|------|
-| `MiniMax-M2.7` | 最新旗舰模型，1M context |
-| `MiniMax-M2.7-highspeed` | 高速推理版本 |
-| `MiniMax-M2.5` | 上一代模型，204K context |
-| `MiniMax-M2.5-highspeed` | 上一代高速推理版本 |
+| `MiniMax-M3` | 最新旗舰模型 |
+| `MiniMax-M2.7` | 上一代旗舰模型，192K context |
+| `MiniMax-M2.7-highspeed` | 上一代高速推理版本 |
 
 ```json
 {
@@ -506,14 +505,14 @@ MiniMax 提供 Anthropic Messages API 兼容端点，默认模型为最新的 `M
   },
   "agents": {
     "defaults": {
-      "model": { "primary": "minimax/MiniMax-M2.7" }
+      "model": { "primary": "minimax/MiniMax-M3" }
     },
     "list": [
       {
         "id": "main",
         "default": true,
         "name": "Clawd",
-        "model": "minimax/MiniMax-M2.7"
+        "model": "minimax/MiniMax-M3"
       }
     ]
   }

@@ -31,7 +31,7 @@ export const BUILTIN_PROVIDERS: BuiltInProvider[] = [
   { id: "qianfan", label: "千帆 (百度)", envKey: "QIANFAN_API_KEY", defaultModel: "deepseek-v3-2-251201", baseUrl: "https://qianfan.baidubce.com/v2", defaultApi: "openai-completions" },
   { id: "huggingface", label: "Hugging Face", envKey: "HUGGINGFACE_HUB_TOKEN", defaultModel: "", baseUrl: "https://router.huggingface.co/v1", defaultApi: "openai-completions" },
   { id: "xiaomi", label: "小米 Mimo", envKey: "XIAOMI_API_KEY", defaultModel: "mimo-v2-flash", baseUrl: "https://api.xiaomimimo.com/anthropic", defaultApi: "anthropic-messages" },
-  { id: "minimax", label: "MiniMax", envKey: "MINIMAX_API_KEY", defaultModel: "MiniMax-M2.7", baseUrl: "https://api.minimax.io/anthropic", defaultApi: "anthropic-messages" },
+  { id: "minimax", label: "MiniMax", envKey: "MINIMAX_API_KEY", defaultModel: "MiniMax-M3", baseUrl: "https://api.minimax.io/anthropic", defaultApi: "anthropic-messages" },
   { id: "mistral", label: "Mistral", envKey: "MISTRAL_API_KEY", defaultModel: "mistral-large-latest", baseUrl: "https://api.mistral.ai/v1", defaultApi: "openai-completions" },
   { id: "groq", label: "Groq", envKey: "GROQ_API_KEY", defaultModel: "llama-3.3-70b-versatile", baseUrl: "https://api.groq.com/openai/v1", defaultApi: "openai-completions" },
   { id: "cerebras", label: "Cerebras", envKey: "CEREBRAS_API_KEY", defaultModel: "llama-4-scout-17b-16e-instruct", baseUrl: "https://api.cerebras.ai/v1", defaultApi: "openai-completions" },

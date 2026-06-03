@@ -8,8 +8,8 @@ describe("BUILTIN_PROVIDERS MiniMax", () => {
     expect(minimax).toBeDefined();
   });
 
-  it("uses MiniMax-M2.7 as default model", () => {
-    expect(minimax!.defaultModel).toBe("MiniMax-M2.7");
+  it("uses MiniMax-M3 as default model", () => {
+    expect(minimax!.defaultModel).toBe("MiniMax-M3");
   });
 
   it("uses Anthropic Messages API endpoint", () => {

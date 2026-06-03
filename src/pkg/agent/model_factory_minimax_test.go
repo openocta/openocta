@@ -12,8 +12,8 @@ func TestBuiltInMiniMaxProvider_DefaultModel(t *testing.T) {
 	if !ok {
 		t.Fatal("minimax not found in builtInProviders")
 	}
-	if bp.defaultModel != "MiniMax-M2.7" {
-		t.Errorf("expected default model MiniMax-M2.7, got %s", bp.defaultModel)
+	if bp.defaultModel != "MiniMax-M3" {
+		t.Errorf("expected default model MiniMax-M3, got %s", bp.defaultModel)
 	}
 }
 
@@ -45,9 +45,9 @@ func TestResolveModelFromConfig_MiniMaxRef(t *testing.T) {
 		provider string
 		modelID  string
 	}{
+		{"minimax/MiniMax-M3", "minimax", "MiniMax-M3"},
 		{"minimax/MiniMax-M2.7", "minimax", "MiniMax-M2.7"},
 		{"minimax/MiniMax-M2.7-highspeed", "minimax", "MiniMax-M2.7-highspeed"},
-		{"minimax/MiniMax-M2.5", "minimax", "MiniMax-M2.5"},
 	}
 	for _, tt := range tests {
 		p, m := resolveModelFromConfig(tt.ref)
@@ -74,7 +74,7 @@ func TestCreateModelFactory_MiniMax_DefaultModel(t *testing.T) {
 	t.Setenv("MINIMAX_API_KEY", "test-minimax-key-123")
 
 	cfg := &config.OpenOctaConfig{}
-	// Empty model ID should fall back to built-in default (MiniMax-M2.7)
+	// Empty model ID should fall back to built-in default (MiniMax-M3)
 	factory, err := createModelFactoryForProviderModel(cfg, "minimax", "")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -122,6 +122,7 @@ func TestCreateModelFactory_MiniMax_ConfigProvider(t *testing.T) {
 					APIKey:  "$MINIMAX_API_KEY",
 					API:     &api,
 					Models: []config.ModelDefinition{
+						{ID: "MiniMax-M3", Name: "MiniMax M3"},
 						{ID: "MiniMax-M2.7", Name: "MiniMax M2.7"},
 						{ID: "MiniMax-M2.7-highspeed", Name: "MiniMax M2.7 Highspeed"},
 					},
@@ -141,7 +142,7 @@ func TestCreateModelFactory_MiniMax_ConfigProvider(t *testing.T) {
 
 func TestCreateModelFactory_MiniMax_EnvOverrideModel(t *testing.T) {
 	t.Setenv("MINIMAX_API_KEY", "test-minimax-key-123")
-	t.Setenv("MINIMAX_MODEL", "MiniMax-M2.5")
+	t.Setenv("MINIMAX_MODEL", "MiniMax-M3")
 
 	cfg := &config.OpenOctaConfig{}
 	// Empty model ID should pick up MINIMAX_MODEL env var
