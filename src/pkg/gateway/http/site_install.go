@@ -591,6 +591,11 @@ func installMcp(zipData []byte, typeVal, fromVal string, env func(string) string
 		enabled = *entry.Enabled
 	}
 
+	// Validate MCP command before writing to config (RCE prevention).
+	if err := config.ValidateMcpCommand(entry.Command); err != nil {
+		return "", fmt.Errorf("config.json 中 %q 的 command 无效: %w", firstKey, err)
+	}
+
 	mcpEntry := config.McpServerEntry{
 		Command: entry.Command,
 		Args:    entry.Args,

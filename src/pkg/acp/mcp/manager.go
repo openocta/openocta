@@ -56,6 +56,10 @@ func connectEntry(ctx context.Context, key string, e *config.McpServerEntry) (*C
 
 	if command != "" {
 		// Direct: run command with args and env (stdio)
+		// Validate command against allowlist before execution (defense-in-depth RCE prevention).
+		if err := config.ValidateMcpCommand(command); err != nil {
+			return nil, fmt.Errorf("mcp server %q: %w", key, err)
+		}
 		env := flattenEnv(e.Env)
 		return ConnectStdio(ctx, key, command, e.Args, env)
 	}
