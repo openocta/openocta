@@ -1,5 +1,6 @@
 import { html, nothing } from "lit";
 import { icons } from "../icons.ts";
+import { UNIX_OPENOCTA_WORKSPACE, WIN_OPENOCTA_APPDATA, WIN_OPENOCTA_WORKSPACE } from "../platform-paths.ts";
 
 export type AboutUninstallMode = "program" | "full";
 
@@ -49,7 +50,7 @@ export function renderAbout(props: AboutViewProps) {
       <div class="card-title">清理文稿与数据</div>
       <p class="muted">
         删除<strong>默认工作区</strong>目录下的全部文件与文件夹（通常为
-        <code>~/.openocta/workspace</code>；Windows 为 <code>%APPDATA%&#92;openocta&#92;workspace</code>）。不会删除配置文件与其它状态目录内容。
+        <code>${UNIX_OPENOCTA_WORKSPACE}</code>；Windows 为 <code>${WIN_OPENOCTA_WORKSPACE}</code>）。不会删除配置文件与其它状态目录内容。
       </p>
       ${props.clearWorkspaceError
         ? html`<p class="about-uninstall-api-error" role="alert">${props.clearWorkspaceError}</p>`
@@ -114,7 +115,7 @@ export function renderAbout(props: AboutViewProps) {
                       </p>
                       <p class="about-uninstall-note">
                         <strong>不会删除</strong>本地配置与数据目录（默认 <code>~/.openocta</code>，Windows 为
-                        <code>%APPDATA%&#92;openocta</code> 等）。
+                        <code>${WIN_OPENOCTA_APPDATA}</code> 等）。
                       </p>
                     </div>
 

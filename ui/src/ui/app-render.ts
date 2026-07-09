@@ -85,6 +85,7 @@ import {
 } from "./navigation.ts";
 import { renderSetupWizard } from "./views/setup-wizard.ts";
 import { nativeAlert, nativeConfirm, nativePrompt } from "./native-dialog-bridge.ts";
+import { UNIX_OPENOCTA_WORKSPACE, WIN_OPENOCTA_WORKSPACE } from "./platform-paths.ts";
 import { t } from "./strings.js";
 
 /** 从 session key 提取数字员工 ID，如 agent:main:employee:xxx:run:uuid -> xxx */
@@ -2601,7 +2602,7 @@ export function renderApp(state: AppViewState) {
                 clearWorkspaceError: state.aboutClearWorkspaceError,
                 onClearWorkspace: async () => {
                   const ok = await nativeConfirm(
-                    "将删除本机默认工作区目录内的全部内容（macOS / Linux 一般为 ~/.openocta/workspace，Windows 一般为 %APPDATA%&#92;openocta&#92;workspace）。\n\n此操作不可恢复，请先备份重要文稿。是否继续？",
+                    `将删除本机默认工作区目录内的全部内容（macOS / Linux 一般为 ${UNIX_OPENOCTA_WORKSPACE}，Windows 一般为 ${WIN_OPENOCTA_WORKSPACE}）。\n\n此操作不可恢复，请先备份重要文稿。是否继续？`,
                   );
                   if (!ok) return;
                   const gw = state.settings?.gatewayUrl?.trim();

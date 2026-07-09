@@ -711,7 +711,11 @@ function renderSkillEditorModal(props: SkillLibraryProps) {
   const syntaxError = props.skillEditSyntaxError;
   const canSave = selectedFile && !loading && !saving;
 
-  const visibleFiles = files.filter((f) => !f.split('/').some((part) => part.startsWith('.')));
+  const visibleFiles = files.filter((f) => {
+    if (f.split('/').some((part) => part.startsWith('.'))) return false;
+    if (f === '_meta.json' || f.endsWith('/_meta.json')) return false;
+    return true;
+  });
   const fileTree = buildFileTree(visibleFiles);
 
   return html`
