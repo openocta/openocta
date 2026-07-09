@@ -46,6 +46,20 @@ func sanitizeSchemaMessagesToolCalls(msgs []*schema.Message) {
 	}
 }
 
+// PrepareSchemaMessagesForModel normalizes transcript/agent history so OpenAI-compatible
+// providers (DeepSeek, etc.) accept tool-call turns: arguments sanitized, tool results
+// reordered after assistant tool_calls, and missing tool responses filled with placeholders.
+func PrepareSchemaMessagesForModel(msgs []*schema.Message) []*schema.Message {
+	if len(msgs) == 0 {
+		return msgs
+	}
+	out := append([]*schema.Message(nil), msgs...)
+	sanitizeSchemaMessagesToolCalls(out)
+	out = normalizeToolTurnMessageOrder(out)
+	out = repairIncompleteToolCallMessages(out)
+	return out
+}
+
 const interruptedToolResultText = "[工具执行未完成或被中断]"
 
 // repairIncompleteToolCallMessages inserts placeholder tool messages when an assistant

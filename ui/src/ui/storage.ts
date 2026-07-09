@@ -24,7 +24,7 @@ export function loadSettings(): UiSettings {
     // When running the Control UI via Vite (default port 5173),
     // default to the local gateway server (127.0.0.1:18900).
     // In production (served by the gateway), use same-origin (host:port).
-    const isViteDev = typeof location !== "undefined" && location.port === "5173";
+    const isViteDev = typeof location !== "undefined" && location.port === "5174";
     if (isViteDev) {
       return "127.0.0.1:18900";
     }

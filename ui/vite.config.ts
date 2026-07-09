@@ -34,12 +34,12 @@ export default defineConfig(() => {
       target: "baseline-widely-available",
     },
     css: {
-      transformer: "postcss",
+      transformer: "postcss" as const,
     },
     cssTarget: "baseline-widely-available",
     server: {
       host: true,
-      port: 5173,
+      port: 5174,
       strictPort: true
     },
   };

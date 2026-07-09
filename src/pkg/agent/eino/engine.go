@@ -100,6 +100,8 @@ func NewEngine(ctx context.Context, cfg BuildConfig) (*Engine, error) {
 	if cfg.EnableApproval {
 		handlers = append(handlers, newApprovalMiddleware("execute"))
 	}
+	// Last BeforeChatModel hook: repair tool-call turns after reduction/summarization.
+	handlers = append(handlers, newToolTurnRepairMiddleware())
 
 	var baseTools []einotool.BaseTool
 	if !cfg.DisableTools && !useToolSearch {
