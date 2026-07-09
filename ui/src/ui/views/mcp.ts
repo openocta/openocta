@@ -165,6 +165,10 @@ export function renderFieldLabelWithTooltip(label: string, tooltipText: string) 
 
 const MCP_COMMAND_PRESETS = ["npx", "docker", "uv"] as const;
 
+/** Raw JSON 模式 tooltip：单条 McpServerEntry（服务器名在 UI 中单独填写，不在此 JSON 内）。 */
+export const MCP_RAW_JSON_TOOLTIP =
+  'JSON 格式示例：\n{\n  "command": "npx",\n  "args": ["-y", "prometheus-mcp-server"],\n  "env": { "API_KEY": "xxx" }\n}\n或 URL 形式：\n{\n  "enabled": true,\n  "url": "http://192.168.50.XX:8099/sse"\n}';
+
 /** 与配置 JSON 对齐：trim；自定义 command（或带空格）不得误显示为 npx。 */
 function mcpStdioCommandSelectModel(command: string | undefined): {
   value: string;
@@ -478,10 +482,7 @@ export function renderMcpEditModal(props: McpEditModalProps) {
               `
             : html`
                 <div class="field">
-                  ${renderFieldLabelWithTooltip(
-                    t("mcpRawJson"),
-                    'JSON 格式示例：\n{\n  "command": "npx",\n  "args": ["-y", "prometheus-mcp-server"],\n  "env": { "API_KEY": "xxx" }\n}\n或 URL 形式：\n{\n  "url": "https://mcp.example.com/sse"\n}',
-                  )}
+                  ${renderFieldLabelWithTooltip(t("mcpRawJson"), MCP_RAW_JSON_TOOLTIP)}
                   <span class="textarea"><textarea
                     style="min-height: 200px; font-family: var(--mono);"
                     .value=${props.rawJson}
@@ -646,10 +647,7 @@ export function renderMcp(props: McpProps) {
                         `
                       : html`
                           <div class="field">
-                            ${renderFieldLabelWithTooltip(
-                              t("mcpRawJson"),
-                              'JSON 格式示例：\n{\n  "command": "npx",\n  "args": ["-y", "prometheus-mcp-server"],\n  "env": { "API_KEY": "xxx" }\n}\n或 URL 形式：\n{\n  "url": "https://mcp.example.com/sse"\n}',
-                            )}
+                            ${renderFieldLabelWithTooltip(t("mcpRawJson"), MCP_RAW_JSON_TOOLTIP)}
                             <span class="textarea"><textarea
                               style="min-height: 180px; font-family: var(--mono);"
                               .value=${props.addRawJson}
@@ -933,16 +931,7 @@ export function renderMcp(props: McpProps) {
                               ${t("mcpRawJson")}
                               <span class="mcp-field-hint">
                                 ${icons.info}
-                                <span class="mcp-field-hint__tooltip">JSON 格式示例：
-{
-  "command": "npx",
-  "args": ["-y", "prometheus-mcp-server"],
-  "env": { "API_KEY": "xxx" }
-}
-或 URL 形式：
-{
-  "url": "https://mcp.example.com/sse"
-}</span>
+                                <span class="mcp-field-hint__tooltip">${MCP_RAW_JSON_TOOLTIP}</span>
                               </span>
                             </span>
                             <span class="textarea"><textarea

@@ -12,6 +12,7 @@ import {
   isMcpAddFormValid,
   renderMcpAddConnectionFields,
   renderFieldLabelWithTooltip,
+  MCP_RAW_JSON_TOOLTIP,
   type McpServerEntry,
 } from "./mcp.ts";
 
@@ -491,10 +492,7 @@ export function renderToolLibrary(props: ToolLibraryProps) {
                               `
                             : html`
                                 <div class="field">
-                                  ${renderFieldLabelWithTooltip(
-                                    t("mcpRawJson"),
-                                    'JSON 格式示例：\n{\n  "command": "npx",\n  "args": ["-y", "prometheus-mcp-server"],\n  "env": { "API_KEY": "xxx" }\n}\n或 URL 形式：\n{\n  "url": "https://mcp.example.com/sse"\n}',
-                                  )}
+                                  ${renderFieldLabelWithTooltip(t("mcpRawJson"), MCP_RAW_JSON_TOOLTIP)}
                                   <span class="textarea"><textarea
                                     style="min-height: 180px; font-family: var(--mono);"
                                     .value=${props.addRawJson ?? ""}
