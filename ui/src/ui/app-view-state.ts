@@ -444,7 +444,7 @@ export type AppViewState = {
   knowledgeVaultSelectedPath: string | null;
   knowledgeVaultContent: string;
   knowledgeVaultContentLoading: boolean;
-  knowledgeVaultEditMode: boolean;
+  knowledgeVaultEditorMode: import("./components/vault-editor.ts").VaultEditorMode;
   knowledgeVaultDraftContent: string;
   knowledgeVaultSaving: boolean;
   knowledgeVaultSaveMessage: string | null;
@@ -453,6 +453,18 @@ export type AppViewState = {
   knowledgeVaultGraph: import("./controllers/vault.ts").VaultGraph | null;
   knowledgeVaultGraphLoading: boolean;
   knowledgeVaultQuery: string;
+  knowledgeVaultSidebarWidth: number;
+  knowledgeVaultFileCount: number;
+  knowledgeVaultChunkCount: number;
+  knowledgeVaultLastSyncedAt: string | null;
+  knowledgeVaultSearchMode: import("./views/vault-search-panel.ts").VaultSearchMode;
+  knowledgeVaultSearchResults: import("./controllers/vault.ts").VaultSearchHit[];
+  knowledgeVaultSearchLoading: boolean;
+  knowledgeVaultHighlightLine: number | null;
+  knowledgeVaultSelectedFolderPath: string | null;
+  knowledgeVaultItemModal: import("./views/vault-item-modal.ts").VaultItemModalState | null;
+  knowledgeVaultItemModalSaving: boolean;
+  knowledgeVaultItemModalError: string | null;
 
   toolLibraryLoadedOnce: boolean;
   toolLibraryLoading: boolean;

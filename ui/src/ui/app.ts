@@ -101,6 +101,7 @@ import {
   unregisterNativeDialogInvoker,
   type NativeDialogInvoker,
 } from "./native-dialog-bridge.ts";
+import { knowledgeVaultBeforeUnloadHandler } from "./app-knowledge-vault.ts";
 import { bootstrapShellModeFromUrl, isDesktopShell } from "./open-external-url.ts";
 import { loadSettings, type UiSettings } from "./storage.ts";
 import type { NativeDialogModel } from "./views/native-dialog-overlay.ts";
@@ -612,7 +613,7 @@ export class OpenClawApp extends LitElement implements NativeDialogInvoker {
   @state() knowledgeVaultSelectedPath: string | null = null;
   @state() knowledgeVaultContent = "";
   @state() knowledgeVaultContentLoading = false;
-  @state() knowledgeVaultEditMode = false;
+  @state() knowledgeVaultEditorMode: import("./components/vault-editor.ts").VaultEditorMode = "preview";
   @state() knowledgeVaultDraftContent = "";
   @state() knowledgeVaultSaving = false;
   @state() knowledgeVaultSaveMessage: string | null = null;
@@ -621,6 +622,18 @@ export class OpenClawApp extends LitElement implements NativeDialogInvoker {
   @state() knowledgeVaultGraph: import("./controllers/vault.ts").VaultGraph | null = null;
   @state() knowledgeVaultGraphLoading = false;
   @state() knowledgeVaultQuery = "";
+  @state() knowledgeVaultSidebarWidth = 0;
+  @state() knowledgeVaultFileCount = 0;
+  @state() knowledgeVaultChunkCount = 0;
+  @state() knowledgeVaultLastSyncedAt: string | null = null;
+  @state() knowledgeVaultSearchMode: import("./views/vault-search-panel.ts").VaultSearchMode = "filename";
+  @state() knowledgeVaultSearchResults: import("./controllers/vault.ts").VaultSearchHit[] = [];
+  @state() knowledgeVaultSearchLoading = false;
+  @state() knowledgeVaultHighlightLine: number | null = null;
+  @state() knowledgeVaultSelectedFolderPath: string | null = null;
+  @state() knowledgeVaultItemModal: import("./views/vault-item-modal.ts").VaultItemModalState | null = null;
+  @state() knowledgeVaultItemModalSaving = false;
+  @state() knowledgeVaultItemModalError: string | null = null;
 
   @state() toolLibraryLoadedOnce = false;
   @state() toolLibraryLoading = false;
@@ -720,6 +733,14 @@ export class OpenClawApp extends LitElement implements NativeDialogInvoker {
     }
   };
 
+  private knowledgeVaultBeforeUnload = (event: BeforeUnloadEvent) => {
+    const msg = knowledgeVaultBeforeUnloadHandler(this as unknown as AppViewState);
+    if (msg) {
+      event.preventDefault();
+      event.returnValue = msg;
+    }
+  };
+
   createRenderRoot() {
     return this;
   }
@@ -728,6 +749,7 @@ export class OpenClawApp extends LitElement implements NativeDialogInvoker {
     super.connectedCallback();
     registerNativeDialogInvoker(this);
     document.addEventListener("keydown", this.sessionOverflowEscapeHandler);
+    window.addEventListener("beforeunload", this.knowledgeVaultBeforeUnload);
     handleConnected(this as unknown as Parameters<typeof handleConnected>[0]);
     void this.initialiseDesktopWindowChrome();
   }
@@ -743,6 +765,7 @@ export class OpenClawApp extends LitElement implements NativeDialogInvoker {
     }
     unregisterNativeDialogInvoker(this);
     document.removeEventListener("keydown", this.sessionOverflowEscapeHandler);
+    window.removeEventListener("beforeunload", this.knowledgeVaultBeforeUnload);
     this.teardownDesktopWindowChrome();
     handleDisconnected(this as unknown as Parameters<typeof handleDisconnected>[0]);
     super.disconnectedCallback();

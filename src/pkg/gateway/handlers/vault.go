@@ -2,17 +2,22 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/openocta/openocta/pkg/agent"
+	"github.com/openocta/openocta/pkg/agent/knowledge"
 	"github.com/openocta/openocta/pkg/agent/runtime"
 	"github.com/openocta/openocta/pkg/config"
 	"github.com/openocta/openocta/pkg/gateway/protocol"
+	"github.com/openocta/openocta/pkg/paths"
 )
 
 var (
@@ -319,10 +324,13 @@ func VaultStatusHandler(opts HandlerOpts) error {
 		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInternal, Message: err.Error()}, nil)
 		return nil
 	}
+	chunkCount, lastSyncedAt := vaultIndexStats(env)
 	opts.Respond(true, map[string]interface{}{
-		"vaultDir":  vaultDir,
-		"fileCount": len(files),
-		"enabled":   true,
+		"vaultDir":     vaultDir,
+		"fileCount":    len(files),
+		"chunkCount":   chunkCount,
+		"lastSyncedAt": lastSyncedAt,
+		"enabled":      true,
 	}, nil, nil)
 	return nil
 }
@@ -473,7 +481,14 @@ func VaultMkdirHandler(opts HandlerOpts) error {
 		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInvalidRequest, Message: err.Error()}, nil)
 		return nil
 	}
-	if err := os.MkdirAll(abs, 0o755); err != nil {
+	if _, err := os.Stat(abs); err == nil {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInvalidRequest, Message: "folder already exists"}, nil)
+		return nil
+	} else if !os.IsNotExist(err) {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInternal, Message: err.Error()}, nil)
+		return nil
+	}
+	if err := os.Mkdir(abs, 0o755); err != nil {
 		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInternal, Message: err.Error()}, nil)
 		return nil
 	}
@@ -658,5 +673,305 @@ func VaultGraphHandler(opts HandlerOpts) error {
 		"nodes":    nodes,
 		"edges":    edges,
 	}, nil, nil)
+	return nil
+}
+
+func vaultIndexStats(env func(string) string) (chunkCount int, lastSyncedAt string) {
+	if env == nil {
+		env = func(k string) string { return os.Getenv(k) }
+	}
+	stateDir := paths.ResolveStateDir(env)
+	corpusPath := filepath.Join(stateDir, "knowledge-index", "corpus.json")
+	if info, err := os.Stat(corpusPath); err == nil {
+		lastSyncedAt = info.ModTime().UTC().Format(time.RFC3339)
+	}
+	data, err := os.ReadFile(corpusPath)
+	if err != nil {
+		return 0, lastSyncedAt
+	}
+	var payload struct {
+		Docs []struct {
+			Kind string `json:"kind"`
+		} `json:"docs"`
+	}
+	if err := json.Unmarshal(data, &payload); err != nil {
+		return 0, lastSyncedAt
+	}
+	for _, d := range payload.Docs {
+		if d.Kind == knowledge.KindDocument {
+			chunkCount++
+		}
+	}
+	return chunkCount, lastSyncedAt
+}
+
+func vaultKnowledgeIndexDir(env func(string) string) string {
+	if env == nil {
+		env = func(k string) string { return os.Getenv(k) }
+	}
+	return filepath.Join(paths.ResolveStateDir(env), "knowledge-index")
+}
+
+// VaultDeleteFileHandler handles "vault.deleteFile".
+func VaultDeleteFileHandler(opts HandlerOpts) error {
+	filePath, _ := opts.Params["filePath"].(string)
+	filePath = strings.TrimSpace(filePath)
+	if filePath == "" {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInvalidRequest, Message: "filePath is required"}, nil)
+		return nil
+	}
+	env := func(k string) string { return os.Getenv(k) }
+	cfg, err := loadVaultConfig(env)
+	if err != nil {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInternal, Message: err.Error()}, nil)
+		return nil
+	}
+	vaultDir, err := resolveVaultDirFromParams(cfg, opts.Params, env)
+	if err != nil {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInvalidRequest, Message: err.Error()}, nil)
+		return nil
+	}
+	abs, err := sanitizeVaultFilePath(vaultDir, filePath)
+	if err != nil {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInvalidRequest, Message: err.Error()}, nil)
+		return nil
+	}
+	if err := os.Remove(abs); err != nil {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInternal, Message: err.Error()}, nil)
+		return nil
+	}
+	opts.Respond(true, map[string]interface{}{"ok": true}, nil, nil)
+	return nil
+}
+
+// VaultRenameFileHandler handles "vault.renameFile".
+func VaultRenameFileHandler(opts HandlerOpts) error {
+	fromPath, _ := opts.Params["fromPath"].(string)
+	toPath, _ := opts.Params["toPath"].(string)
+	fromPath = strings.TrimSpace(fromPath)
+	toPath = strings.TrimSpace(toPath)
+	if fromPath == "" || toPath == "" {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInvalidRequest, Message: "fromPath and toPath are required"}, nil)
+		return nil
+	}
+	if !strings.EqualFold(filepath.Ext(toPath), ".md") {
+		toPath += ".md"
+	}
+	env := func(k string) string { return os.Getenv(k) }
+	cfg, err := loadVaultConfig(env)
+	if err != nil {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInternal, Message: err.Error()}, nil)
+		return nil
+	}
+	vaultDir, err := resolveVaultDirFromParams(cfg, opts.Params, env)
+	if err != nil {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInvalidRequest, Message: err.Error()}, nil)
+		return nil
+	}
+	fromAbs, err := sanitizeVaultFilePath(vaultDir, fromPath)
+	if err != nil {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInvalidRequest, Message: err.Error()}, nil)
+		return nil
+	}
+	toAbs, err := sanitizeVaultFilePath(vaultDir, toPath)
+	if err != nil {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInvalidRequest, Message: err.Error()}, nil)
+		return nil
+	}
+	if _, err := os.Stat(fromAbs); err != nil {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInvalidRequest, Message: "source file not found"}, nil)
+		return nil
+	}
+	if _, err := os.Stat(toAbs); err == nil {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInvalidRequest, Message: "target file already exists"}, nil)
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(toAbs), 0o755); err != nil {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInternal, Message: err.Error()}, nil)
+		return nil
+	}
+	if err := os.Rename(fromAbs, toAbs); err != nil {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInternal, Message: err.Error()}, nil)
+		return nil
+	}
+	opts.Respond(true, map[string]interface{}{"ok": true, "path": filepath.ToSlash(toPath)}, nil, nil)
+	return nil
+}
+
+// VaultRenameFolderHandler handles "vault.renameFolder".
+func VaultRenameFolderHandler(opts HandlerOpts) error {
+	fromPath, _ := opts.Params["fromPath"].(string)
+	toPath, _ := opts.Params["toPath"].(string)
+	fromPath = strings.TrimSpace(fromPath)
+	toPath = strings.TrimSpace(toPath)
+	if fromPath == "" || toPath == "" {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInvalidRequest, Message: "fromPath and toPath are required"}, nil)
+		return nil
+	}
+	env := func(k string) string { return os.Getenv(k) }
+	cfg, err := loadVaultConfig(env)
+	if err != nil {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInternal, Message: err.Error()}, nil)
+		return nil
+	}
+	vaultDir, err := resolveVaultDirFromParams(cfg, opts.Params, env)
+	if err != nil {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInvalidRequest, Message: err.Error()}, nil)
+		return nil
+	}
+	fromAbs, err := sanitizeVaultFolderPath(vaultDir, fromPath)
+	if err != nil {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInvalidRequest, Message: err.Error()}, nil)
+		return nil
+	}
+	toAbs, err := sanitizeVaultFolderPath(vaultDir, toPath)
+	if err != nil {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInvalidRequest, Message: err.Error()}, nil)
+		return nil
+	}
+	if _, err := os.Stat(fromAbs); err != nil {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInvalidRequest, Message: "source folder not found"}, nil)
+		return nil
+	}
+	if _, err := os.Stat(toAbs); err == nil {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInvalidRequest, Message: "target folder already exists"}, nil)
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(toAbs), 0o755); err != nil {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInternal, Message: err.Error()}, nil)
+		return nil
+	}
+	if err := os.Rename(fromAbs, toAbs); err != nil {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInternal, Message: err.Error()}, nil)
+		return nil
+	}
+	opts.Respond(true, map[string]interface{}{"ok": true, "folderPath": filepath.ToSlash(toPath)}, nil, nil)
+	return nil
+}
+
+// VaultDeleteFolderHandler handles "vault.deleteFolder".
+func VaultDeleteFolderHandler(opts HandlerOpts) error {
+	folderPath, _ := opts.Params["folderPath"].(string)
+	folderPath = strings.TrimSpace(folderPath)
+	if folderPath == "" {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInvalidRequest, Message: "folderPath is required"}, nil)
+		return nil
+	}
+	confirm := false
+	if v, ok := opts.Params["confirm"].(bool); ok {
+		confirm = v
+	}
+	env := func(k string) string { return os.Getenv(k) }
+	cfg, err := loadVaultConfig(env)
+	if err != nil {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInternal, Message: err.Error()}, nil)
+		return nil
+	}
+	vaultDir, err := resolveVaultDirFromParams(cfg, opts.Params, env)
+	if err != nil {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInvalidRequest, Message: err.Error()}, nil)
+		return nil
+	}
+	abs, err := sanitizeVaultFolderPath(vaultDir, folderPath)
+	if err != nil {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInvalidRequest, Message: err.Error()}, nil)
+		return nil
+	}
+	entries, err := os.ReadDir(abs)
+	if err != nil {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInternal, Message: err.Error()}, nil)
+		return nil
+	}
+	if len(entries) > 0 && !confirm {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInvalidRequest, Message: "folder is not empty"}, nil)
+		return nil
+	}
+	if err := os.RemoveAll(abs); err != nil {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInternal, Message: err.Error()}, nil)
+		return nil
+	}
+	opts.Respond(true, map[string]interface{}{"ok": true}, nil, nil)
+	return nil
+}
+
+type vaultSearchResult struct {
+	Path      string  `json:"path"`
+	Title     string  `json:"title"`
+	Snippet   string  `json:"snippet"`
+	Score     float64 `json:"score"`
+	StartLine int     `json:"startLine"`
+	EndLine   int     `json:"endLine"`
+}
+
+// VaultSearchHandler handles "vault.search".
+func VaultSearchHandler(opts HandlerOpts) error {
+	if !knowledgeEnabledForVault(opts) {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInvalidRequest, Message: "knowledge is disabled"}, nil)
+		return nil
+	}
+	query, _ := opts.Params["query"].(string)
+	query = strings.TrimSpace(query)
+	if query == "" {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInvalidRequest, Message: "query is required"}, nil)
+		return nil
+	}
+	limit := 20
+	switch v := opts.Params["limit"].(type) {
+	case float64:
+		if v > 0 {
+			limit = int(v)
+		}
+	case int:
+		if v > 0 {
+			limit = v
+		}
+	case string:
+		if n, err := strconv.Atoi(strings.TrimSpace(v)); err == nil && n > 0 {
+			limit = n
+		}
+	}
+	env := func(k string) string { return os.Getenv(k) }
+	indexDir := vaultKnowledgeIndexDir(env)
+	eng, release, err := knowledge.AcquireEngine(indexDir, nil)
+	if err != nil {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInternal, Message: err.Error()}, nil)
+		return nil
+	}
+	defer release()
+	kinds := map[string]struct{}{knowledge.KindDocument: {}}
+	hits, err := eng.SearchIndex(context.Background(), query, kinds, limit)
+	if err != nil {
+		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInternal, Message: err.Error()}, nil)
+		return nil
+	}
+	results := make([]vaultSearchResult, 0, len(hits))
+	for _, h := range hits {
+		path := h.Meta["path"]
+		startLine := 1
+		endLine := 1
+		if s := h.Meta["start_line"]; s != "" {
+			if n, err := strconv.Atoi(s); err == nil {
+				startLine = n
+			}
+		}
+		if s := h.Meta["end_line"]; s != "" {
+			if n, err := strconv.Atoi(s); err == nil {
+				endLine = n
+			}
+		}
+		title := h.Title
+		if title == "" {
+			title = path
+		}
+		results = append(results, vaultSearchResult{
+			Path:      path,
+			Title:     title,
+			Snippet:   h.Snippet,
+			Score:     h.Score,
+			StartLine: startLine,
+			EndLine:   endLine,
+		})
+	}
+	opts.Respond(true, map[string]interface{}{"results": results}, nil, nil)
 	return nil
 }

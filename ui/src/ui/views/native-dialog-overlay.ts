@@ -38,9 +38,7 @@ export function renderNativeDialogOverlay(params: {
       }}
     >
       <div class="card channel-panel" style="max-width: 420px; width: 92%;" @click=${(e: Event) => e.stopPropagation()}>
-        <div class="card-title" id="native-dialog-title" style="margin-bottom: 12px; white-space: pre-wrap;">
-          ${model.message}
-        </div>
+        <div class="card-title" id="native-dialog-title" style="margin-bottom: 12px; white-space: pre-line;">${model.message}</div>
         ${
           isPrompt
             ? html`
