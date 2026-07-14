@@ -124,18 +124,23 @@ func SchemaMessagesFromTranscript(msgs []session.TranscriptMessage, opts Transcr
 // is immediately followed by its tool results, matching Eino / provider API contracts.
 // Transcript append order can place toolResult rows before the assistant row when tool
 // execution events are persisted before MessageStop (e.g. long browser tool runs).
+//
+// In-order turns (assistant then its tools, then next assistant) must keep each tool
+// attached to its own assistant. Buffering every tool until the *next* assistant
+// mis-attributes the previous turn's results (provider 400: missing tool_call_id).
 func normalizeToolTurnMessageOrder(msgs []*schema.Message) []*schema.Message {
 	if len(msgs) < 2 {
 		return msgs
 	}
 	out := make([]*schema.Message, 0, len(msgs))
-	var pendingTools []*schema.Message
-	flushPendingTools := func() {
-		if len(pendingTools) == 0 {
+	// Tools seen before their assistant (out-of-order persistence).
+	var pendingBefore []*schema.Message
+	flushPendingBefore := func() {
+		if len(pendingBefore) == 0 {
 			return
 		}
-		out = append(out, pendingTools...)
-		pendingTools = nil
+		out = append(out, pendingBefore...)
+		pendingBefore = nil
 	}
 	for _, msg := range msgs {
 		if msg == nil {
@@ -143,24 +148,75 @@ func normalizeToolTurnMessageOrder(msgs []*schema.Message) []*schema.Message {
 		}
 		switch msg.Role {
 		case schema.Tool:
-			pendingTools = append(pendingTools, msg)
+			if tryAppendToolAfterTrailingAssistant(&out, msg) {
+				continue
+			}
+			pendingBefore = append(pendingBefore, msg)
 		case schema.Assistant:
 			if len(msg.ToolCalls) > 0 {
+				matched, rest := matchToolMessagesToCalls(pendingBefore, msg.ToolCalls)
+				pendingBefore = rest
 				out = append(out, msg)
-				matched, rest := matchToolMessagesToCalls(pendingTools, msg.ToolCalls)
 				out = append(out, matched...)
-				pendingTools = rest
 			} else {
-				flushPendingTools()
+				flushPendingBefore()
 				out = append(out, msg)
 			}
 		default:
-			flushPendingTools()
+			flushPendingBefore()
 			out = append(out, msg)
 		}
 	}
-	flushPendingTools()
+	flushPendingBefore()
 	return out
+}
+
+// tryAppendToolAfterTrailingAssistant attaches an in-order tool result to the most
+// recent assistant tool_calls turn already emitted in out.
+func tryAppendToolAfterTrailingAssistant(out *[]*schema.Message, tool *schema.Message) bool {
+	if out == nil || tool == nil {
+		return false
+	}
+	msgs := *out
+	asstIdx := -1
+	for i := len(msgs) - 1; i >= 0; i-- {
+		m := msgs[i]
+		if m == nil {
+			continue
+		}
+		if m.Role == schema.Tool {
+			continue
+		}
+		if m.Role == schema.Assistant && len(m.ToolCalls) > 0 {
+			asstIdx = i
+		}
+		break
+	}
+	if asstIdx < 0 {
+		return false
+	}
+	id := strings.TrimSpace(tool.ToolCallID)
+	if id == "" {
+		return false
+	}
+	asst := msgs[asstIdx]
+	declared := false
+	for _, tc := range asst.ToolCalls {
+		if strings.TrimSpace(tc.ID) == id {
+			declared = true
+			break
+		}
+	}
+	if !declared {
+		return false
+	}
+	for i := asstIdx + 1; i < len(msgs); i++ {
+		if msgs[i] != nil && msgs[i].Role == schema.Tool && strings.TrimSpace(msgs[i].ToolCallID) == id {
+			return false
+		}
+	}
+	*out = append(msgs, tool)
+	return true
 }
 
 func matchToolMessagesToCalls(tools []*schema.Message, calls []schema.ToolCall) (matched, unmatched []*schema.Message) {

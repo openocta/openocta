@@ -115,3 +115,37 @@ func TestSchemaMessagesFromTranscriptMaxMessages(t *testing.T) {
 		t.Fatalf("unexpected trim: %#v", out)
 	}
 }
+
+// Two sequential in-order tool turns must not re-attach the first tool result under the second assistant.
+func TestNormalizeToolTurnMessageOrderKeepsSequentialPairs(t *testing.T) {
+	t.Parallel()
+	in := []*schema.Message{
+		schema.SystemMessage("sys"),
+		schema.UserMessage("q1"),
+		schema.UserMessage("q2"),
+		schema.AssistantMessage("", []schema.ToolCall{
+			{ID: "call_a", Type: "function", Function: schema.FunctionCall{Name: "weather", Arguments: "{}"}},
+		}),
+		schema.ToolMessage(`{"ok":1}`, "call_a", schema.WithToolName("weather")),
+		schema.AssistantMessage("", []schema.ToolCall{
+			{ID: "call_b", Type: "function", Function: schema.FunctionCall{Name: "weather", Arguments: "{}"}},
+		}),
+		schema.ToolMessage(`{"ok":2}`, "call_b", schema.WithToolName("weather")),
+	}
+	out := PrepareSchemaMessagesForModel(in)
+	if len(out) != 7 {
+		t.Fatalf("expected 7 messages, got %d: %#v", len(out), out)
+	}
+	if out[3].Role != schema.Assistant || out[3].ToolCalls[0].ID != "call_a" {
+		t.Fatalf("assistant1: %#v", out[3])
+	}
+	if out[4].Role != schema.Tool || out[4].ToolCallID != "call_a" {
+		t.Fatalf("tool1 should stay under assistant1, got %#v", out[4])
+	}
+	if out[5].Role != schema.Assistant || out[5].ToolCalls[0].ID != "call_b" {
+		t.Fatalf("assistant2: %#v", out[5])
+	}
+	if out[6].Role != schema.Tool || out[6].ToolCallID != "call_b" {
+		t.Fatalf("tool2 should stay under assistant2, got %#v", out[6])
+	}
+}
