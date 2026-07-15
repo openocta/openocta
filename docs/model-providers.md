@@ -49,7 +49,7 @@
 | **qianfan**     | `QIANFAN_API_KEY`   | deepseek-v3-2-251201         | https://qianfan.baidubce.com/v2 | OpenAI |
 | **huggingface** | `HUGGINGFACE_HUB_TOKEN` | (需指定) | https://router.huggingface.co/v1 | OpenAI |
 | **xiaomi**      | `XIAOMI_API_KEY`    | mimo-v2-flash               | https://api.xiaomimimo.com/anthropic | Anthropic |
-| **minimax**     | `MINIMAX_API_KEY`   | MiniMax-M2.7                | https://api.minimax.io/anthropic | Anthropic |
+| **minimax**     | `MINIMAX_API_KEY`   | MiniMax-M3                  | https://api.minimax.io/anthropic | Anthropic |
 | **mistral**     | `MISTRAL_API_KEY`   | mistral-large-latest        | https://api.mistral.ai/v1 | OpenAI |
 | **groq**        | `GROQ_API_KEY`      | llama-3.3-70b-versatile     | https://api.groq.com/openai/v1 | OpenAI |
 | **cerebras**    | `CEREBRAS_API_KEY`  | llama-4-scout-17b-16e-instruct | https://api.cerebras.ai/v1 | OpenAI |
@@ -490,14 +490,28 @@ NEAR AI Cloud 提供 OpenAI 兼容端点，并支持 TEE 推理模型。默认�
 
 ### MiniMax
 
-MiniMax 提供 Anthropic Messages API 兼容端点，默认模型为最新的 `MiniMax-M2.7`（1M context）。可用模型：
+The built-in `minimax` provider uses the global Anthropic-compatible endpoint and defaults to `MiniMax-M3`. `MiniMax-M2.7` remains available as an explicit model selection.
 
-| 模型 | 说明 |
-|------|------|
-| `MiniMax-M2.7` | 最新旗舰模型，1M context |
-| `MiniMax-M2.7-highspeed` | 高速推理版本 |
-| `MiniMax-M2.5` | 上一代模型，204K context |
-| `MiniMax-M2.5-highspeed` | 上一代高速推理版本 |
+| Model | Context window |
+|-------|----------------|
+| `MiniMax-M3` | 1,000,000 tokens |
+| `MiniMax-M2.7` | 204,800 tokens |
+| `MiniMax-M2.7-highspeed` | Configure explicitly if enabled for your account |
+| `MiniMax-M2.5` | Configure explicitly if enabled for your account |
+| `MiniMax-M2.5-highspeed` | Configure explicitly if enabled for your account |
+
+Supported endpoint configurations:
+
+| Region | API type | Base URL |
+|--------|----------|----------|
+| `global_en` | `openai-completions` | `https://api.minimax.io/v1` |
+| `global_en` | `anthropic-messages` | `https://api.minimax.io/anthropic` |
+| `cn_zh` | `openai-completions` | `https://api.minimaxi.com/v1` |
+| `cn_zh` | `anthropic-messages` | `https://api.minimaxi.com/anthropic` |
+
+For Anthropic-compatible configuration, use the `/anthropic` Base URL directly. The client appends `/v1/messages`. For OpenAI-compatible configuration, the client appends `/chat/completions` to the `/v1` Base URL.
+
+Built-in global Anthropic-compatible configuration:
 
 ```json
 {
@@ -508,21 +522,21 @@ MiniMax 提供 Anthropic Messages API 兼容端点，默认模型为最新的 `M
   },
   "agents": {
     "defaults": {
-      "model": { "primary": "minimax/MiniMax-M2.7" }
+      "model": { "primary": "minimax/MiniMax-M3" }
     },
     "list": [
       {
         "id": "main",
         "default": true,
         "name": "Clawd",
-        "model": "minimax/MiniMax-M2.7"
+        "model": "minimax/MiniMax-M3"
       }
     ]
   }
 }
 ```
 
-使用高速推理版本：
+To select the retained model explicitly:
 
 ```json
 {
@@ -531,9 +545,52 @@ MiniMax 提供 Anthropic Messages API 兼容端点，默认模型为最新的 `M
       {
         "id": "main",
         "default": true,
-        "model": "minimax/MiniMax-M2.7-highspeed"
+        "model": "minimax/MiniMax-M2.7"
       }
     ]
+  }
+}
+```
+
+To use another region or protocol, configure the existing provider through `models.providers`. This example uses the China OpenAI-compatible endpoint while retaining both models:
+
+```json
+{
+  "env": {
+    "vars": {
+      "MINIMAX_API_KEY": "your-api-key"
+    }
+  },
+  "models": {
+    "mode": "merge",
+    "providers": {
+      "minimax": {
+        "baseUrl": "https://api.minimaxi.com/v1",
+        "apiKey": "$MINIMAX_API_KEY",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "MiniMax-M3",
+            "name": "MiniMax M3",
+            "reasoning": true,
+            "input": ["text", "image"],
+            "contextWindow": 1000000
+          },
+          {
+            "id": "MiniMax-M2.7",
+            "name": "MiniMax M2.7",
+            "reasoning": true,
+            "input": ["text"],
+            "contextWindow": 204800
+          }
+        ]
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": { "primary": "minimax/MiniMax-M3" }
+    }
   }
 }
 ```
