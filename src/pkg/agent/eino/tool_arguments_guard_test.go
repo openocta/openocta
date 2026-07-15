@@ -38,6 +38,28 @@ func TestValidateToolCallArgumentsJSON_emptyCommand(t *testing.T) {
 	}
 }
 
+func TestPrepareToolCallArgumentsJSON_writeFileAliasAndEmpty(t *testing.T) {
+	t.Parallel()
+
+	got, err := PrepareToolCallArgumentsJSON("write_file", `{"path":"notes.txt","content":"hi"}`)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(got, `"file_path"`) || strings.Contains(got, `"path"`) {
+		t.Fatalf("expected path remapped to file_path, got %s", got)
+	}
+
+	_, err = PrepareToolCallArgumentsJSON("write_file", `{"content":"hi"}`)
+	if err == nil || !strings.Contains(err.Error(), "file_path") {
+		t.Fatalf("expected missing file_path error, got: %v", err)
+	}
+
+	_, err = PrepareToolCallArgumentsJSON("write_file", `{"file_path":".","content":"hi"}`)
+	if err == nil || !strings.Contains(err.Error(), "file_path") {
+		t.Fatalf("expected empty/dot file_path error, got: %v", err)
+	}
+}
+
 func TestIsLikelyTruncatedToolArguments(t *testing.T) {
 	t.Parallel()
 	if !isLikelyTruncatedToolArguments(`{"command":"abc`, "unexpected end of JSON input") {

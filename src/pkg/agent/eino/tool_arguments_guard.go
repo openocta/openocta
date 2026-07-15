@@ -16,19 +16,79 @@ const (
 	maxExecuteCommandRunes = 4096
 )
 
-// ValidateToolCallArgumentsJSON checks tool arguments before JSON unmarshaling in Eino tools.
-func ValidateToolCallArgumentsJSON(toolName, raw string) error {
+// PrepareToolCallArgumentsJSON normalizes + validates tool arguments before invocation.
+// For filesystem tools it remaps common LLM aliases (path/file/filename) onto file_path
+// so write_file does not land on filepath.Clean("") == "." ("open .: is a directory").
+func PrepareToolCallArgumentsJSON(toolName, raw string) (string, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
-		return fmt.Errorf("工具 %q 的参数为空", toolName)
+		return "", fmt.Errorf("工具 %q 的参数为空", toolName)
 	}
-	if json.Valid([]byte(raw)) {
-		if strings.EqualFold(strings.TrimSpace(toolName), toolNameExecute) {
-			return validateExecuteToolArguments(raw)
+	if !json.Valid([]byte(raw)) {
+		return "", fmt.Errorf("%s", invalidToolArgumentsMessage(toolName, raw))
+	}
+	name := strings.TrimSpace(toolName)
+	if strings.EqualFold(name, toolNameExecute) {
+		if err := validateExecuteToolArguments(raw); err != nil {
+			return "", err
 		}
-		return nil
+		return raw, nil
 	}
-	return fmt.Errorf("%s", invalidToolArgumentsMessage(toolName, raw))
+	if isFilesystemPathTool(name) {
+		normalized, err := normalizeFilesystemToolArguments(name, raw)
+		if err != nil {
+			return "", err
+		}
+		return normalized, nil
+	}
+	return raw, nil
+}
+
+// ValidateToolCallArgumentsJSON checks tool arguments before JSON unmarshaling in Eino tools.
+func ValidateToolCallArgumentsJSON(toolName, raw string) error {
+	_, err := PrepareToolCallArgumentsJSON(toolName, raw)
+	return err
+}
+
+func isFilesystemPathTool(toolName string) bool {
+	switch strings.ToLower(strings.TrimSpace(toolName)) {
+	case "write_file", "edit_file", "read_file":
+		return true
+	default:
+		return false
+	}
+}
+
+func normalizeFilesystemToolArguments(toolName, raw string) (string, error) {
+	var obj map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(raw), &obj); err != nil {
+		return "", fmt.Errorf("工具 %q 的参数 JSON 无效：%w", toolName, err)
+	}
+	if _, ok := obj["file_path"]; !ok {
+		for _, alt := range []string{"path", "file", "filename", "filepath", "filePath"} {
+			if v, ok := obj[alt]; ok {
+				obj["file_path"] = v
+				delete(obj, alt)
+				break
+			}
+		}
+	}
+	filePath := ""
+	if rawPath, ok := obj["file_path"]; ok {
+		_ = json.Unmarshal(rawPath, &filePath)
+	}
+	filePath = strings.TrimSpace(filePath)
+	if filePath == "" || filePath == "." {
+		return "", fmt.Errorf(
+			"工具 %q 缺少有效 file_path（勿用空路径/当前目录）。请传 JSON 字段 file_path，并指向工作区内具体文件，例如 {\"file_path\":\"C:\\\\Users\\\\...\\\\workspace\\\\script.ps1\",\"content\":\"...\"}",
+			toolName,
+		)
+	}
+	out, err := json.Marshal(obj)
+	if err != nil {
+		return "", err
+	}
+	return string(out), nil
 }
 
 func validateExecuteToolArguments(raw string) error {
@@ -142,10 +202,11 @@ func (m *toolArgumentsGuardMiddleware) WrapInvokableToolCall(
 	tCtx *adk.ToolContext,
 ) (adk.InvokableToolCallEndpoint, error) {
 	return func(ctx context.Context, args string, opts ...einotool.Option) (string, error) {
-		if err := ValidateToolCallArgumentsJSON(tCtx.Name, args); err != nil {
+		normalized, err := PrepareToolCallArgumentsJSON(tCtx.Name, args)
+		if err != nil {
 			return err.Error(), nil
 		}
-		return endpoint(ctx, args, opts...)
+		return endpoint(ctx, normalized, opts...)
 	}, nil
 }
 
@@ -155,9 +216,10 @@ func (m *toolArgumentsGuardMiddleware) WrapStreamableToolCall(
 	tCtx *adk.ToolContext,
 ) (adk.StreamableToolCallEndpoint, error) {
 	return func(ctx context.Context, args string, opts ...einotool.Option) (*schema.StreamReader[string], error) {
-		if err := ValidateToolCallArgumentsJSON(tCtx.Name, args); err != nil {
+		normalized, err := PrepareToolCallArgumentsJSON(tCtx.Name, args)
+		if err != nil {
 			return singleChunkStream(err.Error()), nil
 		}
-		return endpoint(ctx, args, opts...)
+		return endpoint(ctx, normalized, opts...)
 	}, nil
 }

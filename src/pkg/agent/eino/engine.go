@@ -75,7 +75,7 @@ func NewEngine(ctx context.Context, cfg BuildConfig) (*Engine, error) {
 
 	fsBackend, err := localbackend.NewBackend(ctx, &localbk.Config{
 		ValidateCommand: cfg.ValidateCommand,
-	})
+	}, localbackend.Options{WorkspaceDir: projectRoot})
 	if err != nil {
 		return nil, fmt.Errorf("filesystem backend: %w", err)
 	}

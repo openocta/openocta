@@ -128,6 +128,7 @@ func BuildSystemPrompt(opts SystemPromptOptions) (string, error) {
 		b.WriteString("## Windows shell policy\n")
 		b.WriteString("Current OS is Windows. execute 的 command 必须是一行完整命令，不要换行；cmd.exe 会在换行处截断后续内容。\n")
 		b.WriteString("Native PowerShell 优先 `-File` 脚本而非 `-Command` 内联；进程监控/窗口控制优先 desktop-control skill。\n")
+		b.WriteString("write_file / edit_file / read_file 必须使用参数名 **file_path**（不要用 path/file），且指向工作区内的具体文件；禁止空路径、`.`、或写入 `C:\\\\` 盘根（如 `C:\\\\weather.ps1`，通常会 Access denied）。\n")
 		b.WriteString("If tool result mentions truncated JSON / finish_reason=length, shorten the command or switch to write_file + -File — never retry with a longer inline script.\n\n")
 	}
 
