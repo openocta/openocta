@@ -22,6 +22,7 @@ type builtInProvider struct {
 }
 
 var builtInProviders = map[string]builtInProvider{
+	"atlascloud":        {"https://api.atlascloud.ai/v1", false, "ATLASCLOUD_API_KEY", "qwen/qwen3.5-flash"},
 	"openrouter":        {"https://openrouter.ai/api/v1", false, "OPENROUTER_API_KEY", "auto"},
 	"litellm":           {"http://localhost:4000", false, "LITELLM_API_KEY", ""},
 	"moonshot":          {"https://api.moonshot.ai/v1", false, "MOONSHOT_API_KEY", "kimi-k2.5"},

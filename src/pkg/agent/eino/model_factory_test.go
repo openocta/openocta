@@ -55,6 +55,33 @@ func TestCreateModelFactoryFromConfig_MiniMax(t *testing.T) {
 	}
 }
 
+func TestCreateModelFactoryFromConfig_AtlasCloud(t *testing.T) {
+	t.Setenv("ATLASCLOUD_API_KEY", "test-key")
+	cfg := &config.OpenOctaConfig{
+		Models: &config.ModelsConfig{
+			Providers: map[string]config.ModelProvider{
+				"atlascloud": {
+					Models: []config.ModelDefinition{{ID: "qwen/qwen3.5-flash"}},
+				},
+			},
+		},
+	}
+	factory, err := CreateModelFactoryFromConfig(cfg, "atlascloud/qwen/qwen3.5-flash")
+	if err != nil {
+		t.Fatalf("CreateModelFactoryFromConfig: %v", err)
+	}
+	if factory == nil {
+		t.Fatal("expected non-nil factory")
+	}
+	_, err = factory.ChatModel(t.Context())
+	if err != nil {
+		// API key is fake; model construction should still succeed.
+		if os.Getenv("CI") != "" {
+			t.Fatalf("ChatModel: %v", err)
+		}
+	}
+}
+
 func TestCreateModelFactoryFromConfig_NearAI(t *testing.T) {
 	t.Setenv("NEARAI_API_KEY", "test-key")
 	cfg := &config.OpenOctaConfig{
