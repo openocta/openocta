@@ -55,7 +55,7 @@
 
 💬 **IM 远程指挥**：支持微信、企业微信、钉钉、飞书 — 随时随地下达任务。
 
-🧠 **四级记忆 + L4 进化**：Knowledge Vault 本地知识库自主沉淀偏好 — 越用越懂你（[说明](./docs/knowledge-vault.md)）。
+🧠 **四级记忆 + 自主进化**：Knowledge Vault 本地知识库自主沉淀偏好 — 越用越懂你（[说明](./docs/knowledge-vault.md)）。
 
 <img src="./imgs/flag-cn.svg" alt="" width="18" height="12"> **国产开源**：国内团队维护，100% 开源（ Apache-2.0）— 中国首个开源个人桌面级智能体。
 
