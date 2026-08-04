@@ -35,6 +35,8 @@ func SendHandler(opts HandlerOpts) error {
 	}
 	accountId, _ := opts.Params["accountId"].(string)
 	accountId = strings.TrimSpace(accountId)
+	chatType, _ := opts.Params["chatType"].(string)
+	chatType = strings.TrimSpace(chatType)
 
 	if message == "" && mediaUrl == "" {
 		opts.Respond(false, nil, &protocol.ErrorShape{
@@ -66,6 +68,9 @@ func SendHandler(opts HandlerOpts) error {
 			}
 			if header, _ := opts.Params["header"].(string); strings.TrimSpace(header) != "" {
 				rtMsg.Metadata["header"] = strings.TrimSpace(header)
+			}
+			if chatType != "" {
+				rtMsg.Metadata["chat_type"] = chatType
 			}
 			if mediaUrl != "" {
 				rtMsg.Media = []channels.RuntimeMedia{

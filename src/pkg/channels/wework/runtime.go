@@ -2,6 +2,7 @@ package wework
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -25,6 +26,7 @@ type Runtime struct {
 	client        *aibot.WSClient
 	authenticated bool
 	lastInboundMs int64
+	chatIDCanon   map[string]string
 }
 
 // NewRuntime 使用 BotID + Secret 创建企业微信智能机器人运行时。
@@ -35,6 +37,7 @@ func NewRuntime(botID, botSecret, wsURL string, cfg channels.BaseRuntimeConfig, 
 		botID:           strings.TrimSpace(botID),
 		botSecret:       strings.TrimSpace(botSecret),
 		wsURL:           strings.TrimSpace(wsURL),
+		chatIDCanon:     make(map[string]string),
 	}
 }
 
@@ -111,6 +114,13 @@ func (r *Runtime) runClient(ctx context.Context) {
 		if msg.Text.Content != "" {
 			content = msg.Text.Content
 		}
+		if msg.ChatID != "" {
+			r.mu.Lock()
+			r.chatIDCanon[strings.ToLower(strings.TrimSpace(msg.ChatID))] = strings.TrimSpace(msg.ChatID)
+			r.mu.Unlock()
+		}
+		fmt.Printf("[wework-runtime] Inbound text received, msg_id=%s, req_id=%s, raw_chat_id=%s, raw_chat_type=%s, sender=%s, content_preview=%.50s\n",
+			msg.MsgID, frame.Headers.ReqID, msg.ChatID, msg.ChatType, sender, content)
 		rawChatType := strings.TrimSpace(msg.ChatType)
 		normalizedChatType := "dm"
 		switch strings.ToLower(rawChatType) {
@@ -183,16 +193,59 @@ func (r *Runtime) Send(msg *channels.RuntimeOutboundMessage) error {
 	if chatID == "" {
 		chatID = strings.TrimSpace(msg.MetadataString("chat_id"))
 	}
+	chatType := strings.TrimSpace(strings.ToLower(msg.MetadataString("chat_type")))
 	if chatID == "" {
 		fmt.Println("[wework-runtime] Send failed: chatID is required")
 		return fmt.Errorf("wework runtime: chatID is required for Send")
+	}
+	if chatType == "group" {
+		r.mu.Lock()
+		if resolved := strings.TrimSpace(r.chatIDCanon[strings.ToLower(chatID)]); resolved != "" && resolved != chatID {
+			fmt.Printf("[wework-runtime] Resolved canonical group chat_id: requested=%s resolved=%s\n", chatID, resolved)
+			chatID = resolved
+		}
+		r.mu.Unlock()
 	}
 
 	content := strings.TrimSpace(msg.Content)
 	fmt.Printf("[wework-runtime] Send started, chat_id=%s, content_length=%d, content_preview=%.50s\n",
 		chatID, len(content), content)
 
-	_, err := cl.SendMarkdown(chatID, content)
+	var err error
+	sendMode := "send_markdown_default"
+	var payload interface{}
+	switch chatType {
+	case "group":
+		sendMode = "send_message_group"
+		payload = map[string]interface{}{
+			"msgtype":   "markdown",
+			"chat_type": 2,
+			"markdown": map[string]interface{}{
+				"content": content,
+			},
+		}
+		_, err = cl.SendMessage(chatID, payload)
+	case "dm", "single":
+		sendMode = "send_message_dm"
+		payload = map[string]interface{}{
+			"msgtype":   "markdown",
+			"chat_type": 1,
+			"markdown": map[string]interface{}{
+				"content": content,
+			},
+		}
+		_, err = cl.SendMessage(chatID, payload)
+	default:
+		payload = map[string]interface{}{
+			"msgtype": "markdown",
+			"markdown": map[string]interface{}{
+				"content": content,
+			},
+		}
+		_, err = cl.SendMarkdown(chatID, content)
+	}
+	fmt.Printf("[wework-runtime] Send payload, mode=%s, chat_id=%s, chat_type=%s, payload=%s\n",
+		sendMode, chatID, chatType, marshalCompact(payload))
 	if err != nil {
 		fmt.Printf("[wework-runtime] Send failed: %v\n", err)
 		return fmt.Errorf("wework runtime: send markdown: %w", err)
@@ -200,6 +253,14 @@ func (r *Runtime) Send(msg *channels.RuntimeOutboundMessage) error {
 
 	fmt.Printf("[wework-runtime] Message sent successfully, chat_id=%s\n", chatID)
 	return nil
+}
+
+func marshalCompact(v interface{}) string {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return fmt.Sprintf("marshal_error:%v", err)
+	}
+	return string(data)
 }
 
 // SendStream 仅聚合最终输出片段后一次性发送（与 QQ 一致，避免将思考/中间态发到企微）。

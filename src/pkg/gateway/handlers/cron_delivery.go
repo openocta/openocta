@@ -2,12 +2,63 @@ package handlers
 
 import (
 	"bytes"
+	"crypto/sha1"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/openocta/openocta/pkg/cron"
 )
+
+var (
+	cronDeliveryDedupMu   sync.Mutex
+	cronDeliveryDedupLast = map[string]time.Time{}
+)
+
+func inferAnnounceChatType(channel, to string) string {
+	channel = strings.TrimSpace(strings.ToLower(channel))
+	to = strings.TrimSpace(strings.ToLower(to))
+	if channel == "wework" && strings.HasPrefix(to, "wrk") {
+		return "group"
+	}
+	return ""
+}
+
+func normalizeCronDeliverySessionKey(sessionKey, jobID string) string {
+	raw := strings.TrimSpace(sessionKey)
+	runSuffix := ":run:"
+	if idx := strings.Index(strings.ToLower(raw), runSuffix); idx >= 0 {
+		return raw[:idx]
+	}
+	if jobID != "" {
+		return "agent:main:cron:" + jobID
+	}
+	return raw
+}
+
+func shouldDeliverCronResult(sessionKey, jobID, summary, status string) bool {
+	baseKey := normalizeCronDeliverySessionKey(sessionKey, jobID)
+	sum := sha1.Sum([]byte(strings.TrimSpace(summary)))
+	dedupKey := fmt.Sprintf("%s|%s|%x", baseKey, strings.TrimSpace(status), sum)
+	now := time.Now()
+
+	cronDeliveryDedupMu.Lock()
+	defer cronDeliveryDedupMu.Unlock()
+
+	for k, t := range cronDeliveryDedupLast {
+		if now.Sub(t) > 30*time.Second {
+			delete(cronDeliveryDedupLast, k)
+		}
+	}
+	if last, ok := cronDeliveryDedupLast[dedupKey]; ok && now.Sub(last) < 10*time.Second {
+		return false
+	}
+	cronDeliveryDedupLast[dedupKey] = now
+	return true
+}
 
 // BuildCronChatSendParams assembles chat.send params from a cron job and resolved session info.
 func BuildCronChatSendParams(job cron.CronJob, sessionKey, sessionId, message string) ChatSendParams {
@@ -17,22 +68,8 @@ func BuildCronChatSendParams(job cron.CronJob, sessionKey, sessionId, message st
 		SessionID:      sessionId,
 		IdempotencyKey: "cron:" + job.ID,
 	}
-	if job.Delivery != nil {
-		mode := strings.TrimSpace(strings.ToLower(job.Delivery.Mode))
-		channel := strings.TrimSpace(job.Delivery.Channel)
-		if mode == "announce" && channel != "" && channel != "last" {
-			to := strings.TrimSpace(job.Delivery.To)
-			if to != "" {
-				p.Channel = channel
-				p.To = to
-				header := "定时任务: " + job.Name
-				if len(header) > 50 {
-					header = header[:47] + "......"
-				}
-				p.Header = header
-			}
-		}
-	}
+	// Cron 的 announce/webhook 投递统一在 DeliverCronResultIfNeeded 中执行，
+	// 避免 chat.send 内的普通回复链路与完成后的 cron 投递重复发送。
 	if job.RunConfig != nil {
 		rc := job.RunConfig
 		if rc.ModelRef != "" {
@@ -79,6 +116,9 @@ func DeliverCronResultIfNeeded(ctx *Context, sessionKey, summary, status string)
 	if jobID == "" {
 		return
 	}
+	if !shouldDeliverCronResult(sessionKey, jobID, summary, status) {
+		return
+	}
 	// Get job: use List and find by ID (CronService may not expose GetJob in interface).
 	list, err := ctx.CronService.List(true)
 	if err != nil {
@@ -120,6 +160,9 @@ func DeliverCronResultIfNeeded(ctx *Context, sessionKey, summary, status string)
 			"to":      to,
 			"message": summary,
 			"header":  header,
+		}
+		if chatType := inferAnnounceChatType(channel, to); chatType != "" {
+			params["chatType"] = chatType
 		}
 		_, _, _ = ctx.InvokeMethod("send", params)
 		return
