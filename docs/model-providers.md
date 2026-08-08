@@ -496,9 +496,6 @@ The built-in `minimax` provider uses the global Anthropic-compatible endpoint an
 |-------|----------------|
 | `MiniMax-M3` | 1,000,000 tokens |
 | `MiniMax-M2.7` | 204,800 tokens |
-| `MiniMax-M2.7-highspeed` | Configure explicitly if enabled for your account |
-| `MiniMax-M2.5` | Configure explicitly if enabled for your account |
-| `MiniMax-M2.5-highspeed` | Configure explicitly if enabled for your account |
 
 Supported endpoint configurations:
 
@@ -573,7 +570,7 @@ To use another region or protocol, configure the existing provider through `mode
             "id": "MiniMax-M3",
             "name": "MiniMax M3",
             "reasoning": true,
-            "input": ["text", "image"],
+            "input": ["text", "image", "video"],
             "contextWindow": 1000000
           },
           {
