@@ -140,42 +140,69 @@ OpenOcta 以 **IT 运维垂域** 为主线：端侧双击安装、完整客户�
 
 ## 功能一览
 
-直观感受 OpenOcta 运维智能体客户端：
+OpenOcta 把巡检、告警、问数、技能与知识沉淀放在同一个端侧客户端里，让运维闭环可装、可连、可干。
 
-<table>
-<tr>
-<td width="50%" align="center" valign="top">
-<img src="./imgs/readmePIC/QQ20260709-211128.png" width="100%" alt="OpenOcta IT Ops Agent chat"><br/>
-<sub><b>智能体对话</b> · 自然语言驱动巡检、告警分析、问数与处置</sub>
-</td>
-<td width="50%" align="center" valign="top">
-<img src="./imgs/readmePIC/QQ20260709-211216.png" width="100%" alt="OpenOcta digital employee marketplace"><br/>
-<sub><b>员工市场</b> · 一键安装 Zabbix、Prometheus、MySQL DBA 等运维数字员工</sub>
-</td>
-</tr>
-<tr>
-<td width="50%" align="center" valign="top">
-<img src="./imgs/readmePIC/QQ20260709-211148.png" width="100%" alt="OpenOcta skills library for DevOps"><br/>
-<sub><b>技能库</b> · 766+ Skills，监控告警 / DevOps / 数据库分类启用</sub>
-</td>
-<td width="50%" align="center" valign="top">
-<img src="./imgs/readmePIC/QQ20260709-211804.png" width="100%" alt="OpenOcta Knowledge Vault for Runbooks"><br/>
-<sub><b>知识库</b> · 沉淀 Runbook、规范与历史案例，供 Agent 语义检索</sub>
-</td>
-</tr>
-<tr>
-<td width="50%" align="center" valign="top">
-<img src="./imgs/readmePIC/QQ20260709-211248.png" width="100%" alt="OpenOcta model configuration"><br/>
-<sub><b>模型</b> · 公有模型 / 本地模型接入，适配内网与数据合规</sub>
-</td>
-<td width="50%" align="center" valign="top">
-<img src="./imgs/readmePIC/QQ20260709-211257.png" width="100%" alt="OpenOcta ops tutorials"><br/>
-<sub><b>教程</b> · Windows / Mac 快速上手与运维实战课程</sub>
-</td>
-</tr>
-</table>
+#### 智能体对话
 
-另有 **工具库、定时任务（巡检）、IM 通道、Webhook** 等模块；更多能力见 [openocta.com](https://openocta.com)。
+用自然语言下达巡检、告警分析、问数与处置任务，Agent 关联上下文并调用运维工具链。
+
+<p align="left">
+  <img alt="OpenOcta 智能体对话：自然语言驱动巡检、告警分析、问数与处置" src="./imgs/readmePIC/QQ20260709-211128.png" width="900">
+</p>
+
+了解更多：[使用场景](./docs/scenarios.md) · [架构概览](./docs/architecture.md)
+
+#### 员工市场
+
+一键安装 Zabbix SRE、Prometheus、MySQL DBA 等角色化数字员工，按场景组合能力，而不是从零拼 Prompt。
+
+<p align="left">
+  <img alt="OpenOcta 员工市场：一键安装运维数字员工" src="./imgs/readmePIC/QQ20260709-211216.png" width="900">
+</p>
+
+了解更多：[数字员工](./docs/digital-employees.md) · [内置员工](./docs/builtin-employees.md)
+
+#### 技能库
+
+启用 766+ Skills，按监控告警 / DevOps / 数据库等分类对接现网工具栈，并通过 MCP 持续扩展。
+
+<p align="left">
+  <img alt="OpenOcta 技能库：监控告警、DevOps、数据库分类启用" src="./imgs/readmePIC/QQ20260709-211148.png" width="900">
+</p>
+
+了解更多：[Skills](./docs/skills.md) · [MCP 配置](./docs/mcp-configuration.md) · [技能市场](https://resource.openocta.com)
+
+#### 知识库
+
+沉淀 Runbook、规范与历史案例，供 Agent 语义检索；越用越懂你的环境与处置偏好。
+
+<p align="left">
+  <img alt="OpenOcta 知识库：Runbook 与历史案例语义检索" src="./imgs/readmePIC/QQ20260709-211804.png" width="900">
+</p>
+
+了解更多：[Knowledge Vault](./docs/knowledge-vault.md) · [用户指南](./docs/knowledge-vault-user-guide.md)
+
+#### 模型配置
+
+接入公有模型或本地模型，适配内网部署与数据合规；首次启动可通过配置引导快速完成。
+
+<p align="left">
+  <img alt="OpenOcta 模型配置：公有模型与本地模型接入" src="./imgs/readmePIC/QQ20260709-211248.png" width="900">
+</p>
+
+了解更多：[大模型配置说明](./docs/model-providers.md)
+
+#### 教程
+
+Windows / Mac 快速上手与运维实战课程，帮助一线运维在约 30 秒装机后快速进入作业。
+
+<p align="left">
+  <img alt="OpenOcta 教程：Windows / Mac 快速上手与运维实战" src="./imgs/readmePIC/QQ20260709-211257.png" width="900">
+</p>
+
+了解更多：[官网教程](https://openocta.com) · [30 秒启动](#30-秒启动windows--macos)
+
+还支持：[**工具系统**](./docs/tools.md)、[**定时巡检 / Cron**](./docs/configuration.md)、[**IM 通道**](./docs/channels-overview.md)、[**Webhooks**](./docs/webhooks.md)；更多能力见 [openocta.com](https://openocta.com)。
 
 ---
 
@@ -222,7 +249,7 @@ OpenOcta 以 **IT 运维垂域** 为主线：端侧双击安装、完整客户�
 2. **安装并打开** — 双击安装桌面客户端（约 30 秒）
 3. **接入模型 → 开始运维对话** — 在「消息」中描述任务；再按需安装 Zabbix / Prometheus 等 Skills 或数字员工，对接你的现网工具
 
-<p align="center">
+<p align="left">
   <img src="./imgs/screenshots/demo.gif" width="720" alt="OpenOcta IT Ops Agent demo">
   <br/>
   <sub>产品演示 · 消息对话 → 技能库 → 知识库 → 运维 Agent（待补充）</sub>
@@ -237,7 +264,7 @@ OpenOcta 以 **IT 运维垂域** 为主线：端侧双击安装、完整客户�
 **方式 A — 界面配置（推荐）**  
 打开客户端「**模型**」Tab，或跟随首次启动的「**配置引导**」，填入 API Key 并选择模型。
 
-<p align="center">
+<p align="left">
   <img src="./imgs/readmePIC/QQ20260709-220423.png" width="780" alt="OpenOcta model setup wizard">
 </p>
 
