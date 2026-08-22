@@ -20,7 +20,7 @@
 <h1 align="center">OpenOcta — ITOps AIAgent (AIOps Agent)</h1>
 
 <p align="center">
-  <b>Mission: the strongest IT Ops Agent</b><br/>
+  <b>Mission: the strongest ITOps Agent</b><br/>
   <sub>Windows / macOS desktop install · full-stack IT ops · natural-language inspection / alerting / data Q&amp;A</sub>
 </p>
 
