@@ -140,42 +140,69 @@ OpenOcta is built around **IT ops as the primary domain**: desktop double-click 
 
 ## Feature gallery
 
-A quick look at the OpenOcta Ops Agent client:
+OpenOcta puts inspection, alerting, data Q&A, skills, and knowledge retention into one desktop client — so the ops loop is installable, connectable, and usable.
 
-<table>
-<tr>
-<td width="50%" align="center" valign="top">
-<img src="./imgs/readmePIC/QQ20260709-211128.png" width="100%" alt="OpenOcta IT Ops Agent chat"><br/>
-<sub><b>Agent chat</b> · Natural-language inspection, alert analysis, data Q&amp;A, and remediation</sub>
-</td>
-<td width="50%" align="center" valign="top">
-<img src="./imgs/readmePIC/QQ20260709-211216.png" width="100%" alt="OpenOcta digital employee marketplace"><br/>
-<sub><b>Employee marketplace</b> · One-click install Zabbix, Prometheus, MySQL DBA, and more</sub>
-</td>
-</tr>
-<tr>
-<td width="50%" align="center" valign="top">
-<img src="./imgs/readmePIC/QQ20260709-211148.png" width="100%" alt="OpenOcta skills library for DevOps"><br/>
-<sub><b>Skills library</b> · 766+ Skills across monitoring, DevOps, and databases</sub>
-</td>
-<td width="50%" align="center" valign="top">
-<img src="./imgs/readmePIC/QQ20260709-211804.png" width="100%" alt="OpenOcta Knowledge Vault for Runbooks"><br/>
-<sub><b>Knowledge Vault</b> · Retain Runbooks, standards, and historical cases for semantic retrieval</sub>
-</td>
-</tr>
-<tr>
-<td width="50%" align="center" valign="top">
-<img src="./imgs/readmePIC/QQ20260709-211248.png" width="100%" alt="OpenOcta model configuration"><br/>
-<sub><b>Models</b> · Public and local model access for intranet and data-compliance needs</sub>
-</td>
-<td width="50%" align="center" valign="top">
-<img src="./imgs/readmePIC/QQ20260709-211257.png" width="100%" alt="OpenOcta ops tutorials"><br/>
-<sub><b>Tutorials</b> · Windows / Mac quick start and hands-on ops courses</sub>
-</td>
-</tr>
-</table>
+#### Agent chat
 
-Also includes **tool library, scheduled jobs (inspection), IM channels, Webhooks**, and more. See [openocta.com](https://openocta.com) for additional capabilities.
+Assign inspection, alert analysis, data Q&A, and remediation in natural language. The Agent correlates context and calls your ops toolchain.
+
+<p align="left">
+  <img alt="OpenOcta Agent chat for natural-language inspection, alert analysis, data Q&A, and remediation" src="./imgs/readmePIC/QQ20260709-211128.png" width="900">
+</p>
+
+Learn more: [Scenarios](./docs/scenarios.md) · [Architecture](./docs/architecture.md)
+
+#### Employee marketplace
+
+One-click install role-based digital employees such as Zabbix SRE, Prometheus, and MySQL DBA — compose capabilities by scenario instead of assembling prompts from scratch.
+
+<p align="left">
+  <img alt="OpenOcta employee marketplace for one-click ops digital employees" src="./imgs/readmePIC/QQ20260709-211216.png" width="900">
+</p>
+
+Learn more: [Digital employees](./docs/digital-employees.md) · [Built-in employees](./docs/builtin-employees.md)
+
+#### Skills library
+
+Enable 766+ Skills across monitoring, DevOps, and databases to connect your live stack, and keep extending via MCP.
+
+<p align="left">
+  <img alt="OpenOcta Skills library across monitoring, DevOps, and databases" src="./imgs/readmePIC/QQ20260709-211148.png" width="900">
+</p>
+
+Learn more: [Skills](./docs/skills.md) · [MCP configuration](./docs/mcp-configuration.md) · [Skills marketplace](https://resource.openocta.com)
+
+#### Knowledge Vault
+
+Retain Runbooks, standards, and historical cases for semantic retrieval — so the Agent learns your environment and remediation preferences over time.
+
+<p align="left">
+  <img alt="OpenOcta Knowledge Vault for Runbooks and historical case retrieval" src="./imgs/readmePIC/QQ20260709-211804.png" width="900">
+</p>
+
+Learn more: [Knowledge Vault](./docs/knowledge-vault.md) · [User guide](./docs/knowledge-vault-user-guide.md)
+
+#### Model configuration
+
+Connect public or local models for intranet deployment and data-compliance needs. First launch can finish setup through the guided wizard.
+
+<p align="left">
+  <img alt="OpenOcta model configuration for public and local model access" src="./imgs/readmePIC/QQ20260709-211248.png" width="900">
+</p>
+
+Learn more: [Model providers](./docs/model-providers.md)
+
+#### Tutorials
+
+Windows / Mac quick start and hands-on ops courses — so frontline teams can go from install to real work in about 30 seconds.
+
+<p align="left">
+  <img alt="OpenOcta tutorials for Windows / Mac quick start and hands-on ops" src="./imgs/readmePIC/QQ20260709-211257.png" width="900">
+</p>
+
+Learn more: [Website](https://openocta.com) · [Start in 30 seconds](#start-in-30-seconds-windows--macos)
+
+Also includes: [**Tools**](./docs/tools.md), [**scheduled inspection / Cron**](./docs/configuration.md), [**IM channels**](./docs/channels-overview.md), and [**Webhooks**](./docs/webhooks.md). More capabilities on [openocta.com](https://openocta.com).
 
 ---
 
@@ -222,7 +249,7 @@ More cases: [openocta.com/cases](https://openocta.com/cases) · [scenario docs](
 2. **Install & open** — Double-click to install the desktop client (~30 seconds)
 3. **Connect a model → start ops chat** — Describe tasks in **Messages**; then install Zabbix / Prometheus Skills or digital employees as needed to connect your live toolchain
 
-<p align="center">
+<p align="left">
   <img src="./imgs/screenshots/demo.gif" width="720" alt="OpenOcta IT Ops Agent demo">
   <br/>
   <sub>Product demo · Messages → Skills → Knowledge Vault → Ops Agent (to be added)</sub>
@@ -237,7 +264,7 @@ After install, connect a large language model before chatting. Choose either pat
 **Option A — UI setup (recommended)**  
 Open the client **Models** tab, or follow the first-run **setup wizard**, enter an API Key, and pick a model.
 
-<p align="center">
+<p align="left">
   <img src="./imgs/readmePIC/QQ20260709-220423.png" width="780" alt="OpenOcta model setup wizard">
 </p>
 
