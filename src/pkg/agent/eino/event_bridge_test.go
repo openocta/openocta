@@ -1,6 +1,7 @@
 package eino
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/cloudwego/eino/schema"
@@ -9,6 +10,31 @@ import (
 	"github.com/openocta/openocta/pkg/agent/stream"
 	"github.com/openocta/openocta/pkg/agent/types"
 )
+
+func TestAppendStreamedToolCallAssemblesReasoningModelArguments(t *testing.T) {
+	calls := make(map[string]*streamedToolCall)
+	chunks := []schema.ToolCall{
+		{ID: "call_1", Function: schema.FunctionCall{Name: "memory_search"}},
+		{Function: schema.FunctionCall{Arguments: `{"query":`}},
+		{Function: schema.FunctionCall{Arguments: `"search-term"}`}},
+	}
+	for _, chunk := range chunks {
+		appendStreamedToolCall(calls, 0, chunk)
+	}
+
+	call := calls["call_1"]
+	if call == nil {
+		t.Fatal("expected tool call")
+	}
+	got := NormalizeToolCallArgumentsJSON(call.arguments.String())
+	var args map[string]string
+	if err := json.Unmarshal([]byte(got), &args); err != nil {
+		t.Fatalf("assembled arguments are invalid JSON: %v", err)
+	}
+	if args["query"] != "search-term" {
+		t.Fatalf("query = %q, want search-term", args["query"])
+	}
+}
 
 func TestBuildAgentMessagesUsesTranscriptHistory(t *testing.T) {
 	t.Parallel()

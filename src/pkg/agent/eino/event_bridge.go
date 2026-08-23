@@ -203,6 +203,49 @@ type pendingToolCall struct {
 	name string
 }
 
+type streamedToolCall struct {
+	id        string
+	name      string
+	arguments strings.Builder
+}
+
+func appendStreamedToolCall(calls map[string]*streamedToolCall, index int, tc schema.ToolCall) {
+	key := strings.TrimSpace(tc.ID)
+	if key == "" {
+		key = fmt.Sprintf("index:%d", index)
+	}
+	call := calls[key]
+	if call == nil {
+		call = &streamedToolCall{}
+		calls[key] = call
+	}
+	if id := strings.TrimSpace(tc.ID); id != "" {
+		call.id = id
+	}
+	if name := strings.TrimSpace(tc.Function.Name); name != "" {
+		call.name = name
+	}
+	call.arguments.WriteString(tc.Function.Arguments)
+}
+
+func emitStreamedToolCalls(out chan<- stream.StreamEvent, sessionID string, calls map[string]*streamedToolCall) {
+	for _, call := range calls {
+		input := json.RawMessage(NormalizeToolCallArgumentsJSON(call.arguments.String()))
+		out <- stream.StreamEvent{
+			Type:      stream.EventToolExecutionStart,
+			SessionID: sessionID,
+			Name:      call.name,
+			ToolUseID: call.id,
+			ContentBlock: &stream.ContentBlock{
+				Type:  "tool_use",
+				ID:    call.id,
+				Name:  call.name,
+				Input: input,
+			},
+		}
+	}
+}
+
 func emitToolOutputAsResult(out chan<- stream.StreamEvent, sessionID string, pending pendingToolCall, output string) {
 	name := strings.TrimSpace(pending.name)
 	if name == "" {
@@ -327,6 +370,7 @@ func StreamEventsFromIterator(ctx context.Context, sessionID, runID string, iter
 				if mo.IsStreaming && mo.MessageStream != nil {
 					var lastReasoning string
 					var lastChunk *schema.Message
+					streamedCalls := make(map[string]*streamedToolCall)
 					for {
 						chunk, err := mo.MessageStream.Recv()
 						if err != nil {
@@ -362,23 +406,14 @@ func StreamEventsFromIterator(ctx context.Context, sessionID, runID string, iter
 						if text := visibleStreamingText(chunk); text != "" {
 							emitAssistantTextOrToolResult(out, sessionID, textStream, pending, text)
 						}
-						for _, tc := range chunk.ToolCalls {
-							input := json.RawMessage(NormalizeToolCallArgumentsJSON(tc.Function.Arguments))
-							pending.id = tc.ID
-							pending.name = tc.Function.Name
-							out <- stream.StreamEvent{
-								Type:      stream.EventToolExecutionStart,
-								SessionID: sessionID,
-								Name:      tc.Function.Name,
-								ToolUseID: tc.ID,
-								ContentBlock: &stream.ContentBlock{
-									Type:  "tool_use",
-									ID:    tc.ID,
-									Name:  tc.Function.Name,
-									Input: input,
-								},
-							}
+						for i, tc := range chunk.ToolCalls {
+							appendStreamedToolCall(streamedCalls, i, tc)
 						}
+					}
+					emitStreamedToolCalls(out, sessionID, streamedCalls)
+					for _, call := range streamedCalls {
+						pending.id = call.id
+						pending.name = call.name
 					}
 					if lastChunk != nil && emitTurnStopFromResponseMeta(out, sessionID, lastChunk.ResponseMeta, textStream) {
 						turnStopEmitted = true
