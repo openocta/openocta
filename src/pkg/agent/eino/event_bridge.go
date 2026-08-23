@@ -209,16 +209,37 @@ type streamedToolCall struct {
 	arguments strings.Builder
 }
 
-func appendStreamedToolCall(calls map[string]*streamedToolCall, index int, tc schema.ToolCall) {
+type streamedToolCalls struct {
+	calls   map[string]*streamedToolCall
+	byIndex map[int]string
+	order   []string
+}
+
+func appendStreamedToolCall(state *streamedToolCalls, index int, tc schema.ToolCall) {
 	key := strings.TrimSpace(tc.ID)
 	if key == "" {
-		key = fmt.Sprintf("index:%d", index)
+		key = state.byIndex[index]
+		if key == "" {
+			key = fmt.Sprintf("index:%d", index)
+		}
+	} else if previous := state.byIndex[index]; previous != "" && previous != key {
+		if call := state.calls[previous]; call != nil {
+			state.calls[key] = call
+			delete(state.calls, previous)
+			for i := range state.order {
+				if state.order[i] == previous {
+					state.order[i] = key
+				}
+			}
+		}
 	}
-	call := calls[key]
+	call := state.calls[key]
 	if call == nil {
 		call = &streamedToolCall{}
-		calls[key] = call
+		state.calls[key] = call
+		state.order = append(state.order, key)
 	}
+	state.byIndex[index] = key
 	if id := strings.TrimSpace(tc.ID); id != "" {
 		call.id = id
 	}
@@ -228,8 +249,9 @@ func appendStreamedToolCall(calls map[string]*streamedToolCall, index int, tc sc
 	call.arguments.WriteString(tc.Function.Arguments)
 }
 
-func emitStreamedToolCalls(out chan<- stream.StreamEvent, sessionID string, calls map[string]*streamedToolCall) {
-	for _, call := range calls {
+func emitStreamedToolCalls(out chan<- stream.StreamEvent, sessionID string, state *streamedToolCalls) {
+	for _, key := range state.order {
+		call := state.calls[key]
 		input := json.RawMessage(NormalizeToolCallArgumentsJSON(call.arguments.String()))
 		out <- stream.StreamEvent{
 			Type:      stream.EventToolExecutionStart,
@@ -370,7 +392,10 @@ func StreamEventsFromIterator(ctx context.Context, sessionID, runID string, iter
 				if mo.IsStreaming && mo.MessageStream != nil {
 					var lastReasoning string
 					var lastChunk *schema.Message
-					streamedCalls := make(map[string]*streamedToolCall)
+					streamedCalls := &streamedToolCalls{
+						calls:   make(map[string]*streamedToolCall),
+						byIndex: make(map[int]string),
+					}
 					for {
 						chunk, err := mo.MessageStream.Recv()
 						if err != nil {
@@ -411,7 +436,7 @@ func StreamEventsFromIterator(ctx context.Context, sessionID, runID string, iter
 						}
 					}
 					emitStreamedToolCalls(out, sessionID, streamedCalls)
-					for _, call := range streamedCalls {
+					for _, call := range streamedCalls.calls {
 						pending.id = call.id
 						pending.name = call.name
 					}

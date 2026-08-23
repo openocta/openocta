@@ -12,7 +12,7 @@ import (
 )
 
 func TestAppendStreamedToolCallAssemblesReasoningModelArguments(t *testing.T) {
-	calls := make(map[string]*streamedToolCall)
+	calls := &streamedToolCalls{calls: make(map[string]*streamedToolCall), byIndex: make(map[int]string)}
 	chunks := []schema.ToolCall{
 		{ID: "call_1", Function: schema.FunctionCall{Name: "memory_search"}},
 		{Function: schema.FunctionCall{Arguments: `{"query":`}},
@@ -22,7 +22,7 @@ func TestAppendStreamedToolCallAssemblesReasoningModelArguments(t *testing.T) {
 		appendStreamedToolCall(calls, 0, chunk)
 	}
 
-	call := calls["call_1"]
+	call := calls.calls["call_1"]
 	if call == nil {
 		t.Fatal("expected tool call")
 	}
@@ -33,6 +33,23 @@ func TestAppendStreamedToolCallAssemblesReasoningModelArguments(t *testing.T) {
 	}
 	if args["query"] != "search-term" {
 		t.Fatalf("query = %q, want search-term", args["query"])
+	}
+}
+
+func TestAppendStreamedToolCallAssociatesContinuationWithoutID(t *testing.T) {
+	calls := &streamedToolCalls{calls: make(map[string]*streamedToolCall), byIndex: make(map[int]string)}
+	appendStreamedToolCall(calls, 0, schema.ToolCall{
+		ID: "call_1", Function: schema.FunctionCall{Name: "memory_search"},
+	})
+	appendStreamedToolCall(calls, 0, schema.ToolCall{
+		Function: schema.FunctionCall{Arguments: `{"query":"term"}`},
+	})
+
+	if len(calls.calls) != 1 {
+		t.Fatalf("expected one assembled tool call, got %d", len(calls.calls))
+	}
+	if got := calls.calls["call_1"].arguments.String(); got != `{"query":"term"}` {
+		t.Fatalf("arguments = %q, want complete continuation", got)
 	}
 }
 
