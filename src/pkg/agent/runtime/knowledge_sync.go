@@ -15,7 +15,7 @@ func InitKnowledgeEngine(ctx context.Context, cfg *config.OpenOctaConfig) error 
 		ctx = context.Background()
 	}
 	opts := resolveKnowledgeOptions(cfg, os.Getenv, "")
-	if opts == nil || !opts.Enabled {
+	if opts == nil {
 		return nil
 	}
 	var emb, err = knowledge.NewEmbedderFromEnv()
@@ -34,8 +34,8 @@ func RebuildKnowledgeIndex(ctx context.Context, cfg *config.OpenOctaConfig, agen
 		ctx = context.Background()
 	}
 	opts := resolveKnowledgeOptions(cfg, os.Getenv, agentID)
-	if opts == nil || !opts.Enabled {
-		return 0, 0, fmt.Errorf("knowledge is disabled")
+	if opts == nil {
+		return 0, 0, fmt.Errorf("knowledge options unavailable")
 	}
 	docs, err := knowledge.SyncVault(opts.VaultDir)
 	if err != nil {

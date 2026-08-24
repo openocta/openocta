@@ -78,7 +78,6 @@
       "verboseDefault": "off",
       "contextTokens": 200000,
       "knowledge": {
-        "enabled": true
       },
       "compaction": {
         "mode": "default"

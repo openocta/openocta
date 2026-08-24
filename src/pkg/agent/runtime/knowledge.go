@@ -14,10 +14,6 @@ func resolveKnowledgeOptions(cfg *config.OpenOctaConfig, env func(string) string
 	if env == nil {
 		env = os.Getenv
 	}
-	enabled := knowledgeEnabled(cfg)
-	if !enabled {
-		return &KnowledgeOptions{Enabled: false}
-	}
 
 	stateDir := paths.ResolveStateDir(env)
 	vaultDir := agent.ResolveVaultDir(cfg, agentID, env)
@@ -32,21 +28,8 @@ func resolveKnowledgeOptions(cfg *config.OpenOctaConfig, env func(string) string
 	}
 }
 
-func knowledgeEnabled(cfg *config.OpenOctaConfig) bool {
-	if cfg == nil || cfg.Agents == nil || cfg.Agents.Defaults == nil || cfg.Agents.Defaults.Knowledge == nil {
-		return true
-	}
-	if cfg.Agents.Defaults.Knowledge.Enabled == nil {
-		return true
-	}
-	return *cfg.Agents.Defaults.Knowledge.Enabled
-}
-
-// BuildSystemPromptKnowledgeSection returns agent instructions for vault retrieval when knowledge is enabled.
+// BuildSystemPromptKnowledgeSection returns agent instructions for vault retrieval.
 func BuildSystemPromptKnowledgeSection(cfg *config.OpenOctaConfig, agentID string, env func(string) string) string {
-	if !knowledgeEnabled(cfg) {
-		return ""
-	}
 	if env == nil {
 		env = os.Getenv
 	}

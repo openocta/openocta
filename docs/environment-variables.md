@@ -78,7 +78,7 @@
 | `OPENOCTA_MIDDLEWARE_TIMEOUT` | agentsdk **每条 middleware 阶段**超时；未设置则不限制该层。                                                                                                          |
 | `OPENOCTA_HOOK_TIMEOUT` | shell **hook** 默认超时；未设置则沿用 agentsdk 对 `0` 的内部默认（约 600s）。                                                                                            |
 
-知识库 Vault 路径与索引由运行时自动解析，见 [knowledge-vault.md](./knowledge-vault.md)。可通过 `agents.defaults.knowledge.enabled` 关闭。
+知识库 Vault 路径与索引由运行时自动解析，见 [knowledge-vault.md](./knowledge-vault.md)。Knowledge Vault 始终启用。
 
 ---
 

@@ -42,7 +42,7 @@ OpenOcta **知识库**是一套面向个人与团队的长期知识管理能力�
 | **混合检索** | Bleve 全文检索；配置 Embedding API Key 后叠加向量相似度（默认权重：全文 0.55 / 向量 0.45） |
 | **会话内历史检索** | `session_search` 在当前会话 History 中查找相关轮次，适合「上次说的…」「继续刚才」类追问 |
 | **自动初始化** | 首次启动创建 Vault 目录与 `README.md` 引导；索引目录自动维护，无需手动建库 |
-| **可选关闭** | `agents.defaults.knowledge.enabled: false` 可关闭 Vault 同步与 `memory_search` 注册 |
+| **始终可用** | Knowledge Vault 默认开启；配置中不再提供 enable/disable 开关 |
 
 ---
 
@@ -186,24 +186,25 @@ Agent 在需要时主动调用以下工具（也出现在 UI 工具策略的 `gr
 
 知识库采用 **最小配置** 原则：路径、分块、top-k 等使用内置默认值，一般无需调整。
 
-### 8.1 启用 / 关闭
+### 8.1 启用状态
+
+Knowledge Vault **始终启用**，配置中不再提供 `enabled` 开关。旧配置里的 `agents.defaults.knowledge.enabled` 会被忽略。
+
+可选仅配置 Vault 目录：
 
 ```json
 {
   "agents": {
     "defaults": {
       "knowledge": {
-        "enabled": true
+        "vaultDir": "D:/notes/my-vault"
       }
     }
   }
 }
 ```
 
-| 情况 | 行为 |
-|------|------|
-| 省略 `knowledge` 或 `enabled` | **默认开启** |
-| `"enabled": false` | 关闭 Vault sync，不注册 `memory_search`（`session_search` 仍可用） |
+省略整个 `knowledge` 块时，使用默认 Vault 路径（见下节）。
 
 ### 8.2 Workspace 与 Vault 关系
 

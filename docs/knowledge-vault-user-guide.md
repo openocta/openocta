@@ -226,7 +226,6 @@ Agent 使用工具 **`memory_search`**（不是自动读整个 Vault）。检索
   "agents": {
     "defaults": {
       "knowledge": {
-        "enabled": true,
         "vaultDir": "D:/notes/my-vault"
       }
     }
@@ -243,7 +242,7 @@ Agent 使用工具 **`memory_search`**（不是自动读整个 Vault）。检索
 1. 确认笔记已 **保存** 且界面已 **同步索引**（看底栏块数与时间）。
 2. 在知识库 **「全文」** 搜索同一关键词，确认 UI 能搜到。
 3. 在对话中 **再发一条新消息**（不要只依赖旧上下文）。
-4. 确认 `agents.defaults.knowledge.enabled` 未设为 `false`。
+4. 确认已点击「同步索引」，且 Gateway 日志无索引重建错误。
 
 ### Q2：改了 Obsidian 里的文件，界面没更新？
 

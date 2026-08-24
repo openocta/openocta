@@ -162,8 +162,6 @@ const CONFIG_FIELD_HELP: Record<Locale, Record<string, string>> = {
     "agents.defaults.models": "Configured model catalog (keys are full provider/model IDs).",
     "agents.defaults.knowledge":
       "Obsidian-compatible vault indexing for memory_search (vault path and index are auto-managed).",
-    "agents.defaults.knowledge.enabled":
-      "Enable vault sync and memory_search tool (default: true).",
     "agents.defaults.knowledge.vaultDir":
       "Absolute path to the Vault directory; when empty, uses workspace/vault or ~/.openocta/vault.",
     memory: "Memory backend configuration (global).",
@@ -456,8 +454,6 @@ const CONFIG_FIELD_HELP: Record<Locale, Record<string, string>> = {
     "agents.defaults.models": "配置的模型目录（键是完整的提供方/模型 ID）。",
     "agents.defaults.knowledge":
       "Obsidian 兼容 Vault 索引，供 memory_search 使用（Vault 与索引路径自动管理）。",
-    "agents.defaults.knowledge.enabled":
-      "启用 Vault 同步与 memory_search 工具（默认：true）。",
     "agents.defaults.knowledge.vaultDir":
       "Vault 目录绝对路径；留空则使用 workspace/vault 或 ~/.openocta/vault。",
     memory: "记忆后端配置（全局）。",

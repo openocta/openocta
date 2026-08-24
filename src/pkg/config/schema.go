@@ -566,9 +566,9 @@ type AgentDefaultsConfig struct {
 	Sandbox                *AgentSandboxConfig              `json:"sandbox,omitempty"`
 }
 
-// KnowledgeConfig enables Obsidian-compatible vault indexing (memory_search / session_search).
+// KnowledgeConfig configures Obsidian-compatible vault indexing (memory_search / session_search).
+// Knowledge Vault is always on; there is no enable/disable switch.
 type KnowledgeConfig struct {
-	Enabled  *bool   `json:"enabled,omitempty"`
 	VaultDir *string `json:"vaultDir,omitempty"`
 }
 

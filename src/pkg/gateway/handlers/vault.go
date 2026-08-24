@@ -556,10 +556,6 @@ func VaultCreateFileHandler(opts HandlerOpts) error {
 
 // VaultSyncHandler handles "vault.sync" — rebuilds the knowledge index and evicts pooled runtimes.
 func VaultSyncHandler(opts HandlerOpts) error {
-	if !knowledgeEnabledForVault(opts) {
-		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInvalidRequest, Message: "knowledge is disabled"}, nil)
-		return nil
-	}
 	env := func(k string) string { return os.Getenv(k) }
 	cfg, err := loadVaultConfig(env)
 	if err != nil {
@@ -582,21 +578,6 @@ func VaultSyncHandler(opts HandlerOpts) error {
 		"chunkCount": chunkCount,
 	}, nil, nil)
 	return nil
-}
-
-func knowledgeEnabledForVault(opts HandlerOpts) bool {
-	env := func(k string) string { return os.Getenv(k) }
-	cfg, err := loadVaultConfig(env)
-	if err != nil || cfg == nil {
-		return true
-	}
-	if cfg.Agents == nil || cfg.Agents.Defaults == nil || cfg.Agents.Defaults.Knowledge == nil {
-		return true
-	}
-	if cfg.Agents.Defaults.Knowledge.Enabled == nil {
-		return true
-	}
-	return *cfg.Agents.Defaults.Knowledge.Enabled
 }
 
 // VaultGraphHandler handles "vault.graph".
@@ -905,10 +886,6 @@ type vaultSearchResult struct {
 
 // VaultSearchHandler handles "vault.search".
 func VaultSearchHandler(opts HandlerOpts) error {
-	if !knowledgeEnabledForVault(opts) {
-		opts.Respond(false, nil, &protocol.ErrorShape{Code: protocol.ErrCodeInvalidRequest, Message: "knowledge is disabled"}, nil)
-		return nil
-	}
 	query, _ := opts.Params["query"].(string)
 	query = strings.TrimSpace(query)
 	if query == "" {
