@@ -4,6 +4,7 @@ package localbackend
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -42,7 +43,7 @@ func (b *Backend) Execute(ctx context.Context, input *filesystem.ExecuteRequest)
 
 	cmd := newWindowsCmd(ctx, normalized.Command)
 
-	var stdoutBuf, stderrBuf strings.Builder
+	var stdoutBuf, stderrBuf bytes.Buffer
 	cmd.Stdout = &stdoutBuf
 	cmd.Stderr = &stderrBuf
 
@@ -51,14 +52,14 @@ func (b *Backend) Execute(ctx context.Context, input *filesystem.ExecuteRequest)
 		var exitError *exec.ExitError
 		if errors.As(err, &exitError) {
 			exitCode = exitError.ExitCode()
-			stdoutStr := stdoutBuf.String()
-			stderrStr := stderrBuf.String()
+			stdoutStr := decodeWindowsConsoleOutput(stdoutBuf.Bytes())
+			stderrStr := decodeWindowsConsoleOutput(stderrBuf.Bytes())
 			parts := []string{fmt.Sprintf("command exited with non-zero code %d", exitCode)}
 			if stdoutStr != "" {
-				parts = append(parts, "[stdout]:\n"+strings.TrimSuffix(stdoutStr, ""))
+				parts = append(parts, "[stdout]:\n"+stdoutStr)
 			}
 			if stderrStr != "" {
-				parts = append(parts, "[stderr]:\n"+strings.TrimSuffix(stderrStr, ""))
+				parts = append(parts, "[stderr]:\n"+stderrStr)
 			}
 			return &filesystem.ExecuteResponse{
 				Output:   strings.Join(parts, "\n"),
@@ -69,7 +70,7 @@ func (b *Backend) Execute(ctx context.Context, input *filesystem.ExecuteRequest)
 	}
 
 	return &filesystem.ExecuteResponse{
-		Output:   stdoutBuf.String(),
+		Output:   decodeWindowsConsoleOutput(stdoutBuf.Bytes()),
 		ExitCode: &exitCode,
 	}, nil
 }
@@ -222,12 +223,13 @@ func streamStdout(ctx context.Context, cmd *exec.Cmd, stdout io.Reader, w *schem
 		line, err := reader.ReadString('\n')
 		if line != "" {
 			hasOutput = true
+			decoded := decodeWindowsConsoleOutputString(line)
 			select {
 			case <-ctx.Done():
 				_ = cmd.Process.Kill()
 				return hasOutput, ctx.Err()
 			default:
-				w.Send(&filesystem.ExecuteResponse{Output: line}, nil)
+				w.Send(&filesystem.ExecuteResponse{Output: decoded}, nil)
 			}
 		}
 		if err != nil {
@@ -247,7 +249,7 @@ func handleCmdCompletion(cmd *exec.Cmd, stderrData *[]byte, hasOutput bool, w *s
 		if errors.As(err, &exitError) {
 			exitCode := exitError.ExitCode()
 			parts := []string{fmt.Sprintf("command exited with non-zero code %d", exitCode)}
-			if stderrStr := string(*stderrData); stderrStr != "" {
+			if stderrStr := decodeWindowsConsoleOutput(*stderrData); stderrStr != "" {
 				parts = append(parts, "[stderr]:\n"+stderrStr)
 			}
 			w.Send(&filesystem.ExecuteResponse{

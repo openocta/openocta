@@ -16,6 +16,11 @@ import (
 
 // EnsureLibraries installs llama.cpp prebuilt libs into ~/.openocta/yzma-lib if missing.
 func EnsureLibraries(env func(string) string) error {
+	// Fail early on Windows when MSVC runtime is missing — same requirement as
+	// loading ggml.dll, and clearer than a generic LoadLibrary failure later.
+	if err := checkWindowsVCRuntime(); err != nil {
+		return err
+	}
 	libDir := ResolveLibDir(env)
 	if download.AlreadyInstalled(libDir) {
 		return nil

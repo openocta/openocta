@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/openocta/openocta/pkg/agent/runtime"
 	"github.com/openocta/openocta/pkg/config"
 )
 
@@ -27,6 +28,10 @@ func chatRuntimeFingerprint(
 		boolToken(webToolsEnabled),
 		strings.TrimSpace(systemPromptOverrides),
 		"toolschema:minimal",
+		// Bumping runtime.SystemPromptVersion forces the runtime pool to
+		// rebuild so any new system-prompt rules reach the model — without
+		// this, the pool silently reuses a cached runtime with stale rules.
+		"prompt:" + runtime.SystemPromptVersion,
 	}
 	if len(mcpServerKeys) > 0 {
 		sort.Strings(mcpServerKeys)

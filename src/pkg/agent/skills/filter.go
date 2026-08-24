@@ -134,6 +134,11 @@ func ShouldInclude(entry Entry, cfg *config.OpenOctaConfig, eligibility *Eligibi
 	return true
 }
 
+// ResolveSkillKey returns metadata.skillKey when set, otherwise the skill name.
+func ResolveSkillKey(entry Entry) string {
+	return resolveSkillKey(entry)
+}
+
 // resolveSkillKey resolves the skill key (metadata.skillKey or name).
 func resolveSkillKey(entry Entry) string {
 	if entry.Metadata != nil && entry.Metadata.SkillKey != "" {

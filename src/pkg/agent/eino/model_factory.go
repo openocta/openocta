@@ -3,8 +3,10 @@ package eino
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/cloudwego/eino-ext/components/model/claude"
 	"github.com/cloudwego/eino-ext/components/model/openai"
@@ -101,6 +103,25 @@ func modelDefFromProviderCfg(prov config.ModelProvider, resolvedModelID string) 
 	return nil
 }
 
+// directHTTPClient returns an http.Client that bypasses any system/environment
+// proxy (HTTP_PROXY / HTTPS_PROXY / Windows system proxy). A local proxy (e.g.
+// Clash/V2Ray) breaks TLS to provider APIs like volces_ark with an EOF on Post,
+// so model traffic must go direct. The 180s timeout is intentionally generous
+// because stream-mode responses arrive in chunks — short per-request timeouts
+// get hit before deepseek-v4-flash produces its first reasoning token.
+func directHTTPClient(timeout time.Duration) *http.Client {
+	return &http.Client{
+		Timeout: timeout,
+		Transport: &http.Transport{
+			Proxy:                 nil, // never use proxy for model API traffic
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   15 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+			ResponseHeaderTimeout: 30 * time.Second,
+		},
+	}
+}
+
 func buildChatModel(ctx context.Context, useAnthropic bool, modelName, apiKey, baseURL string, maxTokens int) (einomodel.ToolCallingChatModel, error) {
 	if useAnthropic {
 		cfg := &claude.Config{
@@ -113,6 +134,8 @@ func buildChatModel(ctx context.Context, useAnthropic bool, modelName, apiKey, b
 		if maxTokens > 0 {
 			cfg.MaxTokens = maxTokens
 		}
+		// Bypass local proxy: a proxy can cause TLS EOF to provider endpoints.
+		cfg.HTTPClient = directHTTPClient(180 * time.Second)
 		return claude.NewChatModel(ctx, cfg)
 	}
 	cfg := &openai.ChatModelConfig{
@@ -125,6 +148,8 @@ func buildChatModel(ctx context.Context, useAnthropic bool, modelName, apiKey, b
 	if maxTokens > 0 {
 		cfg.MaxTokens = &maxTokens
 	}
+	// Bypass local proxy: a proxy can cause TLS EOF to provider endpoints.
+	cfg.HTTPClient = directHTTPClient(180 * time.Second)
 	return openai.NewChatModel(ctx, cfg)
 }
 

@@ -17,7 +17,7 @@ func ResolveSkillsDir(projectRoot string, cfg *config.OpenOctaConfig, employeeID
 	}
 	var entries []agentSkills.Entry
 	if strings.TrimSpace(employeeID) != "" {
-		entries = loadEmployeeEntries(projectRoot, cfg, employeeID, env)
+		entries = agentSkills.LoadEmployeeEntries(projectRoot, cfg, employeeID, env)
 	}
 	if len(entries) == 0 {
 		entries, _ = agentSkills.LoadWorkspaceEntries(projectRoot, &agentSkills.LoadOptions{Config: cfg})
@@ -27,6 +27,27 @@ func ResolveSkillsDir(projectRoot string, cfg *config.OpenOctaConfig, employeeID
 	}
 	if len(entries) == 0 {
 		return ""
+	}
+	// Prefer first skill base dir when employee-exclusive skills live outside workspace/skills.
+	if strings.TrimSpace(employeeID) != "" {
+		for _, e := range entries {
+			if e.BaseDir != "" {
+				if abs, err := filepath.Abs(e.BaseDir); err == nil && isExistingDir(abs) {
+					return abs
+				}
+			}
+			if e.FilePath != "" {
+				dir := filepath.Dir(e.FilePath)
+				if abs, err := filepath.Abs(dir); err == nil && isExistingDir(abs) {
+					// SKILL.md parent is the skill folder; middleware scans immediate subdirs of a root.
+					parent := filepath.Dir(abs)
+					if isExistingDir(parent) {
+						return parent
+					}
+					return abs
+				}
+			}
+		}
 	}
 	// Use workspace skills dir when present; Eino skill middleware scans immediate subdirs.
 	ws := filepath.Join(projectRoot, "skills")
@@ -44,29 +65,15 @@ func ResolveSkillsDir(projectRoot string, cfg *config.OpenOctaConfig, employeeID
 	return ws
 }
 
-func loadEmployeeEntries(projectRoot string, cfg *config.OpenOctaConfig, employeeID string, env func(string) string) []agentSkills.Entry {
-	// Reuse runtime helper via duplicated minimal logic: workspace + employee dirs.
-	entries, _ := agentSkills.LoadWorkspaceEntries(projectRoot, &agentSkills.LoadOptions{Config: cfg})
-	return entries
+func isExistingDir(path string) bool {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return false
+	}
+	fi, err := os.Stat(path)
+	return err == nil && fi.IsDir()
 }
 
 func filterSkillEntries(entries []agentSkills.Entry, allowed []string) []agentSkills.Entry {
-	if len(allowed) == 0 {
-		return nil
-	}
-	allowSet := map[string]struct{}{}
-	for _, k := range allowed {
-		k = strings.ToLower(strings.TrimSpace(k))
-		if k != "" {
-			allowSet[k] = struct{}{}
-		}
-	}
-	var out []agentSkills.Entry
-	for _, e := range entries {
-		name := strings.ToLower(strings.TrimSpace(e.Name))
-		if _, ok := allowSet[name]; ok {
-			out = append(out, e)
-		}
-	}
-	return out
+	return agentSkills.FilterEntriesByNames(entries, allowed)
 }

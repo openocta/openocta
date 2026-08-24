@@ -8,6 +8,12 @@ import (
 	"strings"
 )
 
+// SystemPromptVersion is included in the runtime fingerprint so any edit to this
+// file (or its embedded rule strings) forces the runtime pool to rebuild and
+// load the new prompt — without this, the pool happily reuses a cached runtime
+// with the old instructions.
+const SystemPromptVersion = "2026-08-07-r3"
+
 // PromptFile holds one loaded markdown file (name and content).
 type PromptFile struct {
 	Name    string

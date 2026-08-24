@@ -37,7 +37,7 @@ func TestNormalizeShellCommand(t *testing.T) {
 					t.Fatalf("NormalizeShellCommand(%q) = %q, want %q", tc.in, got, want)
 				}
 				return
-			case "multiple lines unix", "empty lines skipped":
+			case "multiple lines unix", "empty lines skipped", "cr lf":
 				if runtime.GOOS == "windows" {
 					if got != "echo a echo b" {
 						t.Fatalf("windows join = %q, want %q", got, "echo a echo b")

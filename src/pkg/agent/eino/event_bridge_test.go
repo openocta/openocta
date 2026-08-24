@@ -1,10 +1,13 @@
 package eino
 
 import (
+	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/cloudwego/eino/schema"
 
+	"github.com/openocta/openocta/pkg/a2ui"
 	"github.com/openocta/openocta/pkg/agent/model"
 	"github.com/openocta/openocta/pkg/agent/stream"
 	"github.com/openocta/openocta/pkg/agent/types"
@@ -105,6 +108,49 @@ func TestMapFinishReasonToStopReason(t *testing.T) {
 		if got := mapFinishReasonToStopReason(tc.in); got != tc.want {
 			t.Fatalf("mapFinishReasonToStopReason(%q) = %q, want %q", tc.in, got, tc.want)
 		}
+	}
+}
+
+func TestEmitAssistantTextOrToolResultPreservesWhitespaceChunks(t *testing.T) {
+	t.Parallel()
+
+	out := make(chan stream.StreamEvent, 16)
+	textStream := a2ui.NewAssistantTextStream("sess-ws")
+	emitAssistantTextOrToolResult(out, "sess-ws", textStream, pendingToolCall{}, "汇总：")
+	emitAssistantTextOrToolResult(out, "sess-ws", textStream, pendingToolCall{}, "\n\n")
+	emitAssistantTextOrToolResult(out, "sess-ws", textStream, pendingToolCall{}, "## 标题")
+	emitAssistantTextOrToolResult(out, "sess-ws", textStream, pendingToolCall{}, "\n")
+	emitAssistantTextOrToolResult(out, "sess-ws", textStream, pendingToolCall{}, " ")
+	emitAssistantTextOrToolResult(out, "sess-ws", textStream, pendingToolCall{}, "- item")
+	close(out)
+
+	var lastValue string
+	var textDeltas []string
+	for evt := range out {
+		switch evt.Type {
+		case stream.EventA2UI:
+			var msg a2ui.ServerMessage
+			if err := json.Unmarshal(evt.A2UI, &msg); err != nil {
+				t.Fatalf("unmarshal a2ui: %v", err)
+			}
+			if msg.UpdateDataModel != nil {
+				if s, ok := msg.UpdateDataModel.Value.(string); ok {
+					lastValue = s
+				}
+			}
+		case stream.EventContentBlockDelta:
+			if evt.Delta != nil {
+				textDeltas = append(textDeltas, evt.Delta.Text)
+			}
+		}
+	}
+
+	want := "汇总：\n\n## 标题\n - item"
+	if lastValue != want {
+		t.Fatalf("A2UI content = %q, want %q", lastValue, want)
+	}
+	if got := strings.Join(textDeltas, ""); got != want {
+		t.Fatalf("text deltas = %q, want %q", got, want)
 	}
 }
 

@@ -224,7 +224,19 @@ func emitAssistantTextOrToolResult(
 	pending pendingToolCall,
 	text string,
 ) {
+	// Keep whitespace-only chunks (e.g. "\n", " "). Streaming tokenizers often
+	// emit newlines/spaces alone; TrimSpace here used to drop them and glue
+	// markdown headings/lists into one line in A2UI.
+	if text == "" {
+		return
+	}
 	if strings.TrimSpace(text) == "" {
+		emitAssistantTextDelta(out, sessionID, textStream, text)
+		out <- stream.StreamEvent{
+			Type:      stream.EventContentBlockDelta,
+			SessionID: sessionID,
+			Delta:     &stream.Delta{Type: "text_delta", Text: text},
+		}
 		return
 	}
 	if IsLeakedToolOutputText(text) {

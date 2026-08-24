@@ -3,13 +3,10 @@ package runtime
 
 import (
 	"os"
-	"path/filepath"
 	"strings"
 
 	agentSkills "github.com/openocta/openocta/pkg/agent/skills"
 	"github.com/openocta/openocta/pkg/config"
-	"github.com/openocta/openocta/pkg/employees"
-	"github.com/openocta/openocta/pkg/paths"
 )
 
 // LoadSkillRegistrationsWithBaseDirs returns skill base dirs for sandbox allowlists.
@@ -32,46 +29,7 @@ func LoadSkillsForWorkspace(workspaceDir string, cfg *config.OpenOctaConfig) ([]
 }
 
 func LoadEmployeeSkillEntries(workspaceDir string, cfg *config.OpenOctaConfig, employeeID string, env func(string) string) []agentSkills.Entry {
-	employeeID = strings.TrimSpace(employeeID)
-	if employeeID == "" {
-		return nil
-	}
-	if env == nil {
-		env = os.Getenv
-	}
-	var entries []agentSkills.Entry
-	if ws, err := LoadWorkspaceSkillEntries(workspaceDir, cfg); err == nil {
-		entries = append(entries, ws...)
-	}
-	empDir := filepath.Join(paths.ResolveStateDir(env), "employee_skills", employeeID)
-	if empDir != "" {
-		if empEntries, err := agentSkills.LoadEntriesFromDir(empDir, "openocta-employee"); err == nil {
-			entries = mergeSkillEntries(entries, empEntries)
-		}
-	}
-	if m, err := employees.LoadManifest(employeeID, env); err == nil && m != nil && len(m.SkillIDs) > 0 {
-		entries = FilterSkillEntries(entries, m.SkillIDs)
-	}
-	return entries
-}
-
-func mergeSkillEntries(a, b []agentSkills.Entry) []agentSkills.Entry {
-	byKey := map[string]agentSkills.Entry{}
-	for _, e := range a {
-		byKey[skillKey(e)] = e
-	}
-	for _, e := range b {
-		byKey[skillKey(e)] = e
-	}
-	out := make([]agentSkills.Entry, 0, len(byKey))
-	for _, e := range byKey {
-		out = append(out, e)
-	}
-	return out
-}
-
-func skillKey(e agentSkills.Entry) string {
-	return strings.ToLower(strings.TrimSpace(e.Name))
+	return agentSkills.LoadEmployeeEntries(workspaceDir, cfg, employeeID, env)
 }
 
 func uniqueAbsSkillBaseDirs(entries []agentSkills.Entry) []string {

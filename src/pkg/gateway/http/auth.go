@@ -33,13 +33,21 @@ func (s *Server) getExpectedToken() string {
 }
 
 // extractRequestToken extracts token from Authorization: Bearer <token> or X-Gateway-Token.
+// Also accepts ?token= query param — the preview iframe navigation cannot attach
+// headers, so the front-end appends the token to preview URLs (localFilePreviewUrl).
 func extractRequestToken(r *http.Request) string {
 	if ah := r.Header.Get(headerAuthorization); ah != "" {
 		if strings.HasPrefix(strings.TrimSpace(ah), "Bearer ") {
 			return strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(ah), "Bearer "))
 		}
 	}
-	return strings.TrimSpace(r.Header.Get(headerGatewayToken))
+	if t := strings.TrimSpace(r.Header.Get(headerGatewayToken)); t != "" {
+		return t
+	}
+	if t := strings.TrimSpace(r.URL.Query().Get("token")); t != "" {
+		return t
+	}
+	return ""
 }
 
 // validateGatewayToken returns true if the request has a valid token.

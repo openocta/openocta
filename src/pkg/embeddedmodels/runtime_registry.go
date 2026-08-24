@@ -27,8 +27,16 @@ func acquireLlamaLib(libDir string) error {
 	llamaLibMu.Lock()
 	defer llamaLibMu.Unlock()
 	if llamaLibRefs == 0 {
-		if err := llama.Load(libDir); err != nil {
+		if err := checkWindowsVCRuntime(); err != nil {
 			return err
+		}
+		// Windows: sibling DLLs next to ggml.dll are not on LoadLibrary's default
+		// search path; register libDir first or Load fails with "module not found".
+		if err := prepareLlamaLibSearchPath(libDir); err != nil {
+			return fmt.Errorf("设置推理库搜索路径失败: %w", err)
+		}
+		if err := llama.Load(libDir); err != nil {
+			return fmt.Errorf("%w（若已安装 VC++ 运行库仍失败，请确认 yzma-lib 完整，或向社区反馈）", err)
 		}
 		llama.LogSet(llama.LogSilent())
 		llama.Init()

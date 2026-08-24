@@ -2977,6 +2977,10 @@ func ChatSendHandler(opts HandlerOpts) error {
 					}
 				} else {
 					chatLog.Warn("reply delivery skipped: no content to deliver sessionKey=%s", sessionKey)
+					// Frontend relies on chat/complete to clear the active run state;
+					// without this broadcast the UI stays stuck in "thinking" forever.
+					broadcastChatComplete(ctxForBroadcast, runId, sessionKey)
+					appendErrorToTranscript(transcriptPath, "模型未产生任何回复内容（可能因超时或服务异常）", runId, sessionKey, ctxForBroadcast)
 				}
 			}
 			if cronSession {
