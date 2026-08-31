@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="Apache-2.0">
 </p>
 
-<h1 align="center">OpenOcta — ITOps AIAgent (AIOps Agent)</h1>
+<h1 align="center">OpenOcta — AIOps Agent (ITOps AIAgent)</h1>
 
 <p align="center">
   <b>Mission: the strongest ITOps Agent</b><br/>
