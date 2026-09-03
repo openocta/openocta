@@ -33,6 +33,7 @@
 | 厂商 (provider) | 认证环境变量 | 默认模型示例 | 默认 Base URL | API 类型 |
 |-----------------|-------------|--------------|---------------|----------|
 | **anthropic**   | `ANTHROPIC_API_KEY` | claude-sonnet-4-5-20250929 | (官方) | Anthropic |
+| **atlascloud**  | `ATLASCLOUD_API_KEY` | qwen/qwen3.5-flash | https://api.atlascloud.ai/v1 | OpenAI |
 | **openai**      | `OPENAI_API_KEY`    | gpt-4                       | (官方) | OpenAI |
 | **openrouter** | `OPENROUTER_API_KEY` | auto                        | https://openrouter.ai/api/v1 | OpenAI |
 | **litellm**     | `LITELLM_API_KEY`   | (需指定)                    | http://localhost:4000 | OpenAI |
@@ -117,6 +118,33 @@
         "default": true,
         "name": "Clawd",
         "model": "openai/gpt-4"
+      }
+    ]
+  }
+}
+```
+
+### Atlas Cloud
+
+Atlas Cloud 使用 OpenAI-compatible LLM endpoint。模型引用格式为 `atlascloud/<model-id>`。
+
+```json
+{
+  "env": {
+    "vars": {
+      "ATLASCLOUD_API_KEY": "your-atlascloud-api-key"
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": { "primary": "atlascloud/qwen/qwen3.5-flash" }
+    },
+    "list": [
+      {
+        "id": "main",
+        "default": true,
+        "name": "Clawd",
+        "model": "atlascloud/deepseek-ai/deepseek-v4-pro"
       }
     ]
   }
