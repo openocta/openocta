@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BUILTIN_PROVIDERS, parseModelRef, formatModelRef } from "./models-builtin.ts";
+import { getModelsForProvider } from "./models.ts";
 
 describe("BUILTIN_PROVIDERS MiniMax", () => {
   const minimax = BUILTIN_PROVIDERS.find((p) => p.id === "minimax");
@@ -8,8 +9,16 @@ describe("BUILTIN_PROVIDERS MiniMax", () => {
     expect(minimax).toBeDefined();
   });
 
-  it("uses MiniMax-M2.7 as default model", () => {
-    expect(minimax!.defaultModel).toBe("MiniMax-M2.7");
+  it("uses MiniMax-M3 as default model", () => {
+    expect(minimax!.defaultModel).toBe("MiniMax-M3");
+  });
+
+  it("lists MiniMax-M3 and MiniMax-M2.7", () => {
+    expect(minimax!.models).toEqual(["MiniMax-M3", "MiniMax-M2.7"]);
+    expect(getModelsForProvider("minimax")).toEqual([
+      { id: "MiniMax-M3", name: "MiniMax-M3" },
+      { id: "MiniMax-M2.7", name: "MiniMax-M2.7" },
+    ]);
   });
 
   it("uses Anthropic Messages API endpoint", () => {
@@ -58,6 +67,11 @@ describe("BUILTIN_PROVIDERS NEAR AI Cloud", () => {
 });
 
 describe("parseModelRef with MiniMax", () => {
+  it("parses minimax/MiniMax-M3", () => {
+    const result = parseModelRef("minimax/MiniMax-M3");
+    expect(result).toEqual({ provider: "minimax", modelId: "MiniMax-M3" });
+  });
+
   it("parses minimax/MiniMax-M2.7", () => {
     const result = parseModelRef("minimax/MiniMax-M2.7");
     expect(result).toEqual({ provider: "minimax", modelId: "MiniMax-M2.7" });
@@ -85,6 +99,10 @@ describe("parseModelRef with NEAR AI Cloud", () => {
 });
 
 describe("formatModelRef with MiniMax", () => {
+  it("formats the MiniMax-M3 model ref", () => {
+    expect(formatModelRef("minimax", "MiniMax-M3")).toBe("minimax/MiniMax-M3");
+  });
+
   it("formats minimax model ref correctly", () => {
     expect(formatModelRef("minimax", "MiniMax-M2.7")).toBe("minimax/MiniMax-M2.7");
   });

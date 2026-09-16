@@ -148,6 +148,7 @@ export function getModelsForProvider(providerKey: string, provider?: ModelProvid
   const builtin = BUILTIN_PROVIDERS.find((p) => p.id === providerKey);
   const configured = provider?.models ?? [];
   if (configured.length > 0) return configured;
+  if (builtin?.models?.length) return builtin.models.map((id) => ({ id, name: id }));
   if (builtin?.defaultModel) return [{ id: builtin.defaultModel, name: builtin.defaultModel }];
   return [];
 }
