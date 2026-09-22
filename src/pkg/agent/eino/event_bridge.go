@@ -2,9 +2,11 @@ package eino
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/cloudwego/eino/adk"
 	"github.com/cloudwego/eino/schema"
@@ -126,6 +128,18 @@ func BuildUserMessages(req types.Request) ([]*schema.Message, error) {
 				})
 			}
 		case model.ContentBlockDocument:
+			// Most Eino chat model adapters do not implement the FileURL
+			// part and reject it outright — "unsupported chat message part
+			// type: file_url" (#110) — so a text-bearing document goes to
+			// the model as text. Binary documents keep the FileURL part for
+			// the adapters that accept it.
+			if text := documentTextForModel(b); text != "" {
+				parts = append(parts, schema.ChatMessagePart{
+					Type: schema.ChatMessagePartTypeText,
+					Text: text,
+				})
+				continue
+			}
 			url := b.URL
 			if url == "" && b.Data != "" {
 				mime := b.MediaType
@@ -146,6 +160,66 @@ func BuildUserMessages(req types.Request) ([]*schema.Message, error) {
 		return nil, fmt.Errorf("empty multimodal content")
 	}
 	return []*schema.Message{{Role: schema.User, MultiContent: parts}}, nil
+}
+
+// maxDocumentTextBytes bounds how much extracted document text is forwarded
+// to the model: attachments are capped at 5 MiB upstream, and pasting more
+// than this buys nothing while crowding the context window.
+const maxDocumentTextBytes = 256 << 10
+
+// documentTextForModel returns the model-facing text for a document block:
+// pre-extracted text when the caller supplied it, otherwise the decoded
+// payload when it is text (txt/md/csv/json/code — the upload path that hit
+// #110). Binary documents (pdf, office, archives) return "" so the caller
+// keeps the FileURL part for adapters that accept it.
+func documentTextForModel(b model.ContentBlock) string {
+	if text := strings.TrimSpace(b.Text); text != "" {
+		return truncateTextForModel(text)
+	}
+	if b.Data == "" {
+		return ""
+	}
+	raw, err := decodeBase64(b.Data)
+	if err != nil || !decodesAsText(raw) {
+		return ""
+	}
+	return truncateTextForModel(string(raw))
+}
+
+// decodeBase64 accepts both padded and raw standard encodings, matching the
+// gateway's attachment decoder.
+func decodeBase64(data string) ([]byte, error) {
+	compact := strings.NewReplacer("\r", "", "\n", "").Replace(data)
+	if raw, err := base64.StdEncoding.DecodeString(compact); err == nil {
+		return raw, nil
+	}
+	return base64.RawStdEncoding.DecodeString(compact)
+}
+
+// decodesAsText is deliberately conservative: valid UTF-8 with no NUL byte
+// in the head. Binary formats essentially always carry a NUL early, and a
+// false "text" verdict would forward garbage the model cannot use anyway.
+func decodesAsText(raw []byte) bool {
+	if !utf8.Valid(raw) {
+		return false
+	}
+	limit := len(raw)
+	if limit > 8192 {
+		limit = 8192
+	}
+	for _, c := range raw[:limit] {
+		if c == 0 {
+			return false
+		}
+	}
+	return true
+}
+
+func truncateTextForModel(text string) string {
+	if len(text) <= maxDocumentTextBytes {
+		return text
+	}
+	return text[:maxDocumentTextBytes] + "\n[attachment text truncated]"
 }
 
 // mapFinishReasonToStopReason maps Eino schema.ResponseMeta.FinishReason to OpenOcta stop reasons

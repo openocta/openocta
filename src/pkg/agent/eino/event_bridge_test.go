@@ -1,6 +1,7 @@
 package eino
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -184,5 +185,133 @@ func TestEmitTurnStopFromResponseMeta(t *testing.T) {
 	}
 	if len(out2) != 0 {
 		t.Fatalf("expected no events, got %d", len(out2))
+	}
+}
+
+func TestBuildUserMessagesTextDocumentBecomesTextPart(t *testing.T) {
+	t.Parallel()
+
+	// A text upload used to become a FileURL part, which every chat model
+	// adapter rejects: "unsupported chat message part type: file_url" (#110).
+	msgs, err := BuildUserMessages(types.Request{
+		Prompt: "summarize this",
+		ContentBlocks: []model.ContentBlock{
+			{
+				Type:      model.ContentBlockDocument,
+				MediaType: "text/plain",
+				Data:      "U0VMRUNUIDE7IC0tIGEgdGV4dCBmaWxlCnNlY29uZCBsaW5l",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("BuildUserMessages: %v", err)
+	}
+	if len(msgs) != 1 || len(msgs[0].MultiContent) != 2 {
+		t.Fatalf("unexpected message parts: %+v", msgs)
+	}
+	docPart := msgs[0].MultiContent[1]
+	if docPart.Type != schema.ChatMessagePartTypeText {
+		t.Fatalf("expected text part for a text document, got %q", docPart.Type)
+	}
+	if docPart.Text != "SELECT 1; -- a text file\nsecond line" {
+		t.Fatalf("unexpected document text: %q", docPart.Text)
+	}
+}
+
+func TestBuildUserMessagesPrefersExtractedDocumentText(t *testing.T) {
+	t.Parallel()
+
+	// Pre-extracted text wins over the payload, so a PDF whose text was
+	// already pulled out still reaches the model as text.
+	msgs, err := BuildUserMessages(types.Request{
+		ContentBlocks: []model.ContentBlock{
+			{
+				Type:      model.ContentBlockDocument,
+				MediaType: "application/pdf",
+				Data:      "JVBERi0xLjQKJQABAmJpbmFyeQ==",
+				Text:      "extracted pdf body",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("BuildUserMessages: %v", err)
+	}
+	docPart := msgs[0].MultiContent[0]
+	if docPart.Type != schema.ChatMessagePartTypeText || docPart.Text != "extracted pdf body" {
+		t.Fatalf("expected extracted text part, got %q / %q", docPart.Type, docPart.Text)
+	}
+}
+
+func TestBuildUserMessagesBinaryDocumentKeepsFileURLPart(t *testing.T) {
+	t.Parallel()
+
+	// A binary document keeps the FileURL part: text extraction cannot read
+	// it, and the adapters that do accept files should keep receiving it.
+	msgs, err := BuildUserMessages(types.Request{
+		ContentBlocks: []model.ContentBlock{
+			{
+				Type:      model.ContentBlockDocument,
+				MediaType: "application/pdf",
+				Data:      "JVBERi0xLjQKJQABAmJpbmFyeQ==",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("BuildUserMessages: %v", err)
+	}
+	docPart := msgs[0].MultiContent[0]
+	if docPart.Type != schema.ChatMessagePartTypeFileURL {
+		t.Fatalf("expected file_url part for a binary document, got %q", docPart.Type)
+	}
+	if docPart.FileURL == nil || docPart.FileURL.URL != "data:application/pdf;base64,JVBERi0xLjQKJQABAmJpbmFyeQ==" {
+		t.Fatalf("unexpected file url: %+v", docPart.FileURL)
+	}
+}
+
+func TestDocumentTextForModelRejectsNonTextPayloads(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name string
+		raw  []byte
+	}{
+		{"nul byte", []byte("text\x00more")},
+		{"invalid utf-8", []byte{0xff, 0xfe, 0x00, 0x01}},
+	}
+	for _, tc := range cases {
+		if got := documentTextForModel(model.ContentBlock{
+			Type:      model.ContentBlockDocument,
+			MediaType: "application/octet-stream",
+			Data:      base64.StdEncoding.EncodeToString(tc.raw),
+		}); got != "" {
+			t.Fatalf("%s: expected no text, got %q", tc.name, got)
+		}
+	}
+	// Text payloads pass through, including CJK and accented scripts.
+	if got := documentTextForModel(model.ContentBlock{
+		Type:      model.ContentBlockDocument,
+		MediaType: "text/plain",
+		Data:      base64.StdEncoding.EncodeToString([]byte("运维手册：磁盘使用率 91%")),
+	}); got != "运维手册：磁盘使用率 91%" {
+		t.Fatalf("unexpected text payload: %q", got)
+	}
+}
+
+func TestTruncateTextForModelBoundsLongAttachments(t *testing.T) {
+	t.Parallel()
+
+	if got := truncateTextForModel(strings.Repeat("a", maxDocumentTextBytes)); got != strings.Repeat("a", maxDocumentTextBytes) {
+		t.Fatal("text at the limit must pass through untouched")
+	}
+	got := truncateTextForModel(strings.Repeat("a", maxDocumentTextBytes+10))
+	if !strings.HasSuffix(got, "\n[attachment text truncated]") {
+		t.Fatalf("expected truncation marker, got suffix %q", got[len(got)-40:])
+	}
+	// The payload is bounded to the limit plus the marker, whatever the input size.
+	if len(got) != maxDocumentTextBytes+len("\n[attachment text truncated]") {
+		t.Fatalf("unexpected truncated length: %d", len(got))
+	}
+	if !strings.HasPrefix(got, strings.Repeat("a", maxDocumentTextBytes)) {
+		t.Fatal("truncation must keep the head of the payload")
 	}
 }
