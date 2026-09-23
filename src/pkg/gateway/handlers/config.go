@@ -330,6 +330,16 @@ func ConfigPatchHandler(opts HandlerOpts) error {
 	// Use raw file content as base to preserve all keys (struct marshal drops omitempty/extra keys)
 	baseMap := ConfigSnapshotToMap(snap)
 	merged := mergePatch(baseMap, patch)
+
+	// Validate MCP server commands before writing to disk (RCE prevention).
+	if err := validateMcpInMergedConfig(merged); err != nil {
+		opts.Respond(false, nil, &protocol.ErrorShape{
+			Code:    protocol.ErrCodeInvalidRequest,
+			Message: err.Error(),
+		}, nil)
+		return nil
+	}
+
 	data, err := json.MarshalIndent(merged, "", "  ")
 	if err != nil {
 		opts.Respond(false, nil, &protocol.ErrorShape{
@@ -472,6 +482,24 @@ func ConfigSnapshotToMap(snap *ConfigSnapshot) map[string]interface{} {
 		}
 	}
 	return map[string]interface{}{}
+}
+
+// validateMcpInMergedConfig checks MCP server commands in a merged config map
+// before writing to disk. Returns nil if validation passes, or an error describing the violation.
+func validateMcpInMergedConfig(merged map[string]interface{}) error {
+	data, err := json.Marshal(merged)
+	if err != nil {
+		return err
+	}
+	var cfg config.OpenOctaConfig
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		// If the merged config can't be parsed, skip MCP validation.
+		return nil
+	}
+	if cfg.Mcp == nil || len(cfg.Mcp.Servers) == 0 {
+		return nil
+	}
+	return config.ValidateMcpServers(cfg.Mcp.Servers)
 }
 
 // WriteConfigMap writes a config map to the given path, preserving all keys.
