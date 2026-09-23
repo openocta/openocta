@@ -80,6 +80,22 @@ func (b *Backend) Edit(ctx context.Context, req *filesystem.EditRequest) error {
 	return b.Local.Edit(ctx, &cp)
 }
 
+// Read resolves the target path and rejects directories before delegating.
+// The upstream Local.Read() does not check IsDir() on Unix, which would
+// silently return empty content for directories instead of a clear error.
+func (b *Backend) Read(ctx context.Context, req *filesystem.ReadRequest) (*filesystem.FileContent, error) {
+	if req == nil {
+		return nil, nil
+	}
+	path, err := ResolveWritablePath(req.FilePath, b.workspaceDir)
+	if err != nil {
+		return nil, err
+	}
+	cp := *req
+	cp.FilePath = path
+	return b.Local.Read(ctx, &cp)
+}
+
 // Ensure Backend satisfies filesystem interfaces used by DeepAgent.
 var (
 	_ filesystem.Backend        = (*Backend)(nil)
