@@ -45,11 +45,11 @@
 | **together**    | `TOGETHER_API_KEY`  | meta-llama/Llama-3.3-70B-Instruct-Turbo | https://api.together.xyz/v1 | OpenAI |
 | **venice**      | `VENICE_API_KEY`    | falcon-3.1-70b              | https://api.venice.ai/api/v1 | OpenAI |
 | **nearai**      | `NEARAI_API_KEY`    | zai-org/GLM-5.1-FP8         | https://cloud-api.near.ai/v1 | OpenAI |
-| **synthetic**   | `SYNTHETIC_API_KEY` | hf:MiniMaxAI/MiniMax-M2.1   | https://api.synthetic.new/anthropic | Anthropic |
+| **synthetic**   | `SYNTHETIC_API_KEY` | (explicit model required) | https://api.synthetic.new/anthropic | Anthropic |
 | **qianfan**     | `QIANFAN_API_KEY`   | deepseek-v3-2-251201         | https://qianfan.baidubce.com/v2 | OpenAI |
 | **huggingface** | `HUGGINGFACE_HUB_TOKEN` | (需指定) | https://router.huggingface.co/v1 | OpenAI |
 | **xiaomi**      | `XIAOMI_API_KEY`    | mimo-v2-flash               | https://api.xiaomimimo.com/anthropic | Anthropic |
-| **minimax**     | `MINIMAX_API_KEY`   | MiniMax-M2.7                | https://api.minimax.io/anthropic | Anthropic |
+| **minimax**     | `MINIMAX_API_KEY`   | MiniMax-M3.1-Flash          | https://api.minimax.io/anthropic | Anthropic |
 | **mistral**     | `MISTRAL_API_KEY`   | mistral-large-latest        | https://api.mistral.ai/v1 | OpenAI |
 | **groq**        | `GROQ_API_KEY`      | llama-3.3-70b-versatile     | https://api.groq.com/openai/v1 | OpenAI |
 | **cerebras**    | `CEREBRAS_API_KEY`  | llama-4-scout-17b-16e-instruct | https://api.cerebras.ai/v1 | OpenAI |
@@ -386,7 +386,9 @@ NEAR AI Cloud 提供 OpenAI 兼容端点，并支持 TEE 推理模型。默认�
 }
 ```
 
-### Synthetic（MiniMax 等）
+### Synthetic
+
+Select an explicit model ID supported by your gateway account, or set `SYNTHETIC_MODEL`. There is no built-in model default. Existing saved references remain supported by the client; the legacy configuration below illustrates such a saved reference and is not a recommendation for new setups. Direct MiniMax model IDs must not be assumed to work on this gateway.
 
 ```json
 {
@@ -490,14 +492,27 @@ NEAR AI Cloud 提供 OpenAI 兼容端点，并支持 TEE 推理模型。默认�
 
 ### MiniMax
 
-MiniMax 提供 Anthropic Messages API 兼容端点，默认模型为最新的 `MiniMax-M2.7`（1M context）。可用模型：
+The built-in `minimax` provider uses the global Anthropic-compatible endpoint and defaults to `MiniMax-M3.1-Flash`. The built-in picker lists Flash first, followed by `MiniMax-M3`. Saved model lists, explicit legacy model references, custom IDs, and `MINIMAX_MODEL` overrides remain unchanged.
 
-| 模型 | 说明 |
-|------|------|
-| `MiniMax-M2.7` | 最新旗舰模型，1M context |
-| `MiniMax-M2.7-highspeed` | 高速推理版本 |
-| `MiniMax-M2.5` | 上一代模型，204K context |
-| `MiniMax-M2.5-highspeed` | 上一代高速推理版本 |
+| Model | Context window |
+|-------|----------------|
+| `MiniMax-M3.1-Flash` | 1,000,000 tokens |
+| `MiniMax-M3` | 1,000,000 tokens |
+
+Flash uses adaptive thinking by default. The client leaves thinking and effort unspecified, allowing the service defaults, and does not send `service_tier` or `reasoning_split`. Messages requests for either current model default to a 4,096-token output limit when no limit is configured; an explicit `maxTokens` value takes precedence. See the [MiniMax model guide](https://platform.minimax.io/docs/guides/models-intro.md).
+
+Supported endpoint configurations:
+
+| Region | API type | Base URL |
+|--------|----------|----------|
+| `global_en` | `openai-completions` | `https://api.minimax.io/v1` |
+| `global_en` | `anthropic-messages` | `https://api.minimax.io/anthropic` |
+| `cn_zh` | `openai-completions` | `https://api.minimaxi.com/v1` |
+| `cn_zh` | `anthropic-messages` | `https://api.minimaxi.com/anthropic` |
+
+For Anthropic-compatible configuration, use the `/anthropic` Base URL directly. The client appends `/v1/messages`. For OpenAI-compatible configuration, the client appends `/chat/completions` to the `/v1` Base URL.
+
+Built-in global Anthropic-compatible configuration:
 
 ```json
 {
@@ -508,21 +523,21 @@ MiniMax 提供 Anthropic Messages API 兼容端点，默认模型为最新的 `M
   },
   "agents": {
     "defaults": {
-      "model": { "primary": "minimax/MiniMax-M2.7" }
+      "model": { "primary": "minimax/MiniMax-M3.1-Flash" }
     },
     "list": [
       {
         "id": "main",
         "default": true,
         "name": "Clawd",
-        "model": "minimax/MiniMax-M2.7"
+        "model": "minimax/MiniMax-M3.1-Flash"
       }
     ]
   }
 }
 ```
 
-使用高速推理版本：
+To select a saved legacy model explicitly:
 
 ```json
 {
@@ -531,9 +546,53 @@ MiniMax 提供 Anthropic Messages API 兼容端点，默认模型为最新的 `M
       {
         "id": "main",
         "default": true,
-        "model": "minimax/MiniMax-M2.7-highspeed"
+        "model": "minimax/MiniMax-M2.7"
       }
     ]
+  }
+}
+```
+
+To use another region or protocol, configure the existing provider through `models.providers`. This example uses the China OpenAI-compatible endpoint while retaining both models:
+
+```json
+{
+  "env": {
+    "vars": {
+      "MINIMAX_API_KEY": "your-api-key"
+    }
+  },
+  "models": {
+    "mode": "merge",
+    "providers": {
+      "minimax": {
+        "baseUrl": "https://api.minimaxi.com/v1",
+        "apiKey": "$MINIMAX_API_KEY",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "MiniMax-M3.1-Flash",
+            "name": "MiniMax M3.1 Flash",
+            "reasoning": true,
+            "input": ["text", "image", "video"],
+            "contextWindow": 1000000,
+            "maxTokens": 524288
+          },
+          {
+            "id": "MiniMax-M3",
+            "name": "MiniMax M3",
+            "reasoning": true,
+            "input": ["text", "image", "video"],
+            "contextWindow": 1000000
+          }
+        ]
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": { "primary": "minimax/MiniMax-M3.1-Flash" }
+    }
   }
 }
 ```

@@ -35,11 +35,11 @@ var builtInProviders = map[string]builtInProvider{
 	"together":          {"https://api.together.xyz/v1", false, "TOGETHER_API_KEY", "meta-llama/Llama-3.3-70B-Instruct-Turbo"},
 	"venice":            {"https://api.venice.ai/api/v1", false, "VENICE_API_KEY", "falcon-3.1-70b"},
 	"nearai":            {"https://cloud-api.near.ai/v1", false, "NEARAI_API_KEY", "zai-org/GLM-5.1-FP8"},
-	"synthetic":         {"https://api.synthetic.new/anthropic", true, "SYNTHETIC_API_KEY", "hf:MiniMaxAI/MiniMax-M2.1"},
+	"synthetic":         {"https://api.synthetic.new/anthropic", true, "SYNTHETIC_API_KEY", ""},
 	"qianfan":           {"https://qianfan.baidubce.com/v2", false, "QIANFAN_API_KEY", "deepseek-v3-2-251201"},
 	"huggingface":       {"https://router.huggingface.co/v1", false, "HUGGINGFACE_HUB_TOKEN", ""},
 	"xiaomi":            {"https://api.xiaomimimo.com/anthropic", true, "XIAOMI_API_KEY", "mimo-v2-flash"},
-	"minimax":           {"https://api.minimax.io/anthropic", true, "MINIMAX_API_KEY", "MiniMax-M2.7"},
+	"minimax":           {"https://api.minimax.io/anthropic", true, "MINIMAX_API_KEY", "MiniMax-M3.1-Flash"},
 	"mistral":           {"https://api.mistral.ai/v1", false, "MISTRAL_API_KEY", "mistral-large-latest"},
 	"groq":              {"https://api.groq.com/openai/v1", false, "GROQ_API_KEY", "llama-3.3-70b-versatile"},
 	"cerebras":          {"https://api.cerebras.ai/v1", false, "CEREBRAS_API_KEY", "llama-4-scout-17b-16e-instruct"},
@@ -124,6 +124,10 @@ func directHTTPClient(timeout time.Duration) *http.Client {
 
 func buildChatModel(ctx context.Context, useAnthropic bool, modelName, apiKey, baseURL string, maxTokens int) (einomodel.ToolCallingChatModel, error) {
 	if useAnthropic {
+		// The SDK requires a positive output limit for Messages requests.
+		if maxTokens == 0 && (modelName == "MiniMax-M3.1-Flash" || modelName == "MiniMax-M3") {
+			maxTokens = 4096
+		}
 		cfg := &claude.Config{
 			APIKey: apiKey,
 			Model:  modelName,
