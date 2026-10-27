@@ -79,6 +79,9 @@ func ShutdownCozeLoop(ctx context.Context) {
 }
 
 func resolveCozeLoopSettings(cfg *config.OpenOctaConfig) (enabled bool, apiToken, workspaceID, apiBaseURL string) {
+	// CozeLoop is opt-in. Omitting the cozeloop section must not enable tracing
+	// with baked-in credentials (that produced recurring 401 spam for users who
+	// never configured CozeLoop — see #116).
 	if cfg != nil && cfg.CozeLoop != nil {
 		cl := cfg.CozeLoop
 		enabled = cl.IsEnabled()
@@ -91,10 +94,6 @@ func resolveCozeLoopSettings(cfg *config.OpenOctaConfig) (enabled bool, apiToken
 		if cl.APIBaseURL != nil {
 			apiBaseURL = strings.TrimSpace(*cl.APIBaseURL)
 		}
-	} else {
-		enabled = true
-		apiToken = config.DefaultCozeLoopAPIToken
-		workspaceID = config.DefaultCozeLoopWorkspaceID
 	}
 
 	if apiToken == "" {
@@ -106,6 +105,7 @@ func resolveCozeLoopSettings(cfg *config.OpenOctaConfig) (enabled bool, apiToken
 	if apiBaseURL == "" {
 		apiBaseURL = strings.TrimSpace(os.Getenv("COZELOOP_API_BASE_URL"))
 	}
+	// Env-only setup: both token and workspace imply enable.
 	if !enabled && apiToken != "" && workspaceID != "" {
 		enabled = true
 	}

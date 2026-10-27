@@ -58,12 +58,6 @@ type OpenOctaConfig struct {
 	LocalAgents *LocalAgentsConfig `json:"localAgents,omitempty"`
 }
 
-// Default CozeLoop settings when openocta.json omits the cozeloop section.
-const (
-	DefaultCozeLoopWorkspaceID = "7631578048566919169"
-	DefaultCozeLoopAPIToken    = "79a3aa5e0522fc865bb67233a8bca9b4b9cf641cb384cceba25ffb7776e76602"
-)
-
 // CozeLoopConfig configures Eino CozeLoop trace export (see cloudwego/eino-ext/callbacks/cozeloop).
 type CozeLoopConfig struct {
 	Enable      *bool   `json:"enable,omitempty"`

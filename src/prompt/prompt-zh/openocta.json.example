@@ -57,10 +57,10 @@
     }
   },
   "cozeloop": {
-    "enable": true,
+    "enable": false,
     "apiBaseUrl": "",
-    "workspaceId": "7631578048566919169",
-    "apiToken": "79a3aa5e0522fc865bb67233a8bca9b4b9cf641cb384cceba25ffb7776e76602"
+    "workspaceId": "YOUR_COZELOOP_WORKSPACE_ID",
+    "apiToken": "YOUR_COZELOOP_API_TOKEN"
   },
   "agents": {
     "defaults": {
